@@ -2,15 +2,16 @@ package ua.delsix.service.impl;
 
 import lombok.extern.log4j.Log4j;
 import okhttp3.*;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import ua.delsix.service.GeocodingService;
 import ua.delsix.service.WeatherService;
+import ua.delsix.service.units.GeocodingResult;
 import ua.delsix.service.units.Weather;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @Log4j
 @Service
@@ -29,28 +30,38 @@ public class WeatherServiceImpl implements WeatherService {
     public Weather getCurrentWeather(String country, String city, String units) throws IOException {
         Weather weather = getWeather(country, city, units, 5);
 
+        //TODO implement this method
+
         return weather;
     }
 
     @Override
     public Weather getWeatherForecast(String country, String city) {
+        //TODO implement this method
         return null;
     }
 
     @Override
     public Weather getSunriseTime(String country, String city) {
+        //TODO implement this method
         return null;
     }
 
     @Override
     public Weather getSunsetTime(String country, String city) {
+        //TODO implement this method
         return null;
     }
 
     private Weather getWeather(String country, String city, String units, int limit) throws IOException {
         Weather weather = new Weather();
-        weather.setGeocodingResult( // get lat and lon coords from city
-                geocodingService.getGeocodingResult(country, city, 5));
+        Optional<GeocodingResult> geocodingResult = geocodingService.getGeocodingResult(country, city, 5);
+
+        if(geocodingResult.isPresent()) {
+            weather.setGeocodingResult(geocodingResult.get()); // get lat and lon coords from city
+        } else {
+            //TODO handle the case where geocodingResult is empty
+        }
 
         log.trace(String.format(
                 "WeatherServiceImpl:%d - API call:%s?lat=%f&lon=%f&units=%s&appid=%s",
@@ -80,10 +91,6 @@ public class WeatherServiceImpl implements WeatherService {
             JSONObject mainObject = jsonObject.getJSONObject("main");
             JSONObject weatherObject = jsonObject.getJSONArray("weather").getJSONObject(0);
             JSONObject windObject = jsonObject.getJSONObject("wind");
-
-            System.out.println(jsonObject);
-            System.out.println(mainObject);
-            System.out.println(windObject);
 
             weather.setRealTemp(mainObject.getDouble("temp"));
             weather.setFeelsLikeTemp(mainObject.getDouble("feels_like"));

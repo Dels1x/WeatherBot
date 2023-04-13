@@ -12,6 +12,7 @@ import ua.delsix.service.units.GeocodingResult;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Log4j
@@ -27,7 +28,7 @@ public class GeocodingServiceImpl implements GeocodingService {
 
 
     @Override
-    public GeocodingResult getGeocodingResult(String country, String city, int limit) {
+    public Optional<GeocodingResult> getGeocodingResult(String country, String city, int limit) {
         GeocodingResult geocodingResult = new GeocodingResult();
         String countryCode = getCountryCode(country);
         if (countryCode == null) {
@@ -71,6 +72,8 @@ public class GeocodingServiceImpl implements GeocodingService {
                     geocodingResult.setCountryCode(jsonObject.getString("country"));
                     geocodingResult.setEnCityName(localNames.getString("en"));
                     geocodingResult.setRuCityName(localNames.getString("ru"));
+
+                    return Optional.of(geocodingResult);
                 }
             } else {
                 log.error(String.format("GeocodingServiceImpl:%d - Response code: %d",
@@ -81,7 +84,7 @@ public class GeocodingServiceImpl implements GeocodingService {
             log.error("Response error: "+e);
         }
 
-        return geocodingResult;
+        return Optional.empty();
     }
 
     @Override
