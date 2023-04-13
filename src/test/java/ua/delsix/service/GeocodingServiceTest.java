@@ -6,9 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
-import ua.delsix.service.geocoding.GeocodingResult;
-
-import java.io.IOException;
+import ua.delsix.service.units.GeocodingResult;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,7 +18,7 @@ class GeocodingServiceTest {
     private GeocodingService geocodingService;
 
     @Test
-    void getGeocodingResult() throws IOException {
+    void getGeocodingResultOdesa() {
         GeocodingResult expectedResult = new GeocodingResult(
                 46.4843023,
                 30.7322878,
@@ -30,24 +28,39 @@ class GeocodingServiceTest {
         );
 
         GeocodingResult geocodingResult = geocodingService.getGeocodingResult("Ukraine", "Odesa", 5);
+        assertEquals(expectedResult, geocodingResult);
+    }
+
+    @Test
+    void getGeocodingResultDallas() {
+        GeocodingResult expectedResult = new GeocodingResult(
+                32.7762719,
+                -96.7968559,
+                "US",
+                "Dallas",
+                "Даллас"
+        );
+
+        GeocodingResult geocodingResult = geocodingService.getGeocodingResult("USA", "Dallas", 5);
         System.out.println(geocodingResult);
 
         assertEquals(expectedResult, geocodingResult);
     }
 
     @Test
-    void getGeocodingResultOtherLanguage() throws IOException {
+    void getGeocodingResultAmsterdam() {
         GeocodingResult expectedResult = new GeocodingResult(
-                46.4843023,
-                30.7322878,
-                "UA",
-                "Odesa",
-                "Одесса"
+                52.37454030000001,
+                4.897975505617977,
+                "NL",
+                "Amsterdam",
+                "Амстердам"
         );
 
-        GeocodingResult geocodingResult = geocodingService.getGeocodingResult("Украина", "Одесса", 5);
+        GeocodingResult geocodingResult = geocodingService.getGeocodingResult("Netherlands", "Amsterdam", 5);
         System.out.println(geocodingResult);
 
         assertEquals(expectedResult, geocodingResult);
     }
+
 }

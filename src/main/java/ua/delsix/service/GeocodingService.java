@@ -1,13 +1,13 @@
 package ua.delsix.service;
 
-import ua.delsix.service.geocoding.GeocodingResult;
+import ua.delsix.service.units.GeocodingResult;
 
-import java.io.IOException;
+import java.util.List;
 
 public interface GeocodingService {
-    GeocodingResult getGeocodingResult(String county, String city, int limit) throws IOException;
+    GeocodingResult getGeocodingResult(String county, String city, int limit);
 
-    GeocodingResult getGeocodingResult(String city, int limit);
+    List<GeocodingResult> getGeocodingResult(String city, int limit);
 
 
 }
