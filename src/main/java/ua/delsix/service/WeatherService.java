@@ -6,9 +6,8 @@ import ua.delsix.service.units.Weather;
 import java.io.IOException;
 
 public interface WeatherService {
-    Weather getCurrentWeather(String country, String city, String units) throws IOException;
-    Weather getWeatherForecast(String country, String city) throws IOException;
-    Weather getSunriseTime(String country, String city) throws IOException;
-    Weather getSunsetTime(String country, String city) throws IOException;
-
+    String getCurrentWeather(String country, String city) throws IOException;
+    String getWeatherForecast(String country, String city) throws IOException;
+    String getSunriseTime(String country, String city) throws IOException;
+    String getSunsetTime(String country, String city) throws IOException;
 }

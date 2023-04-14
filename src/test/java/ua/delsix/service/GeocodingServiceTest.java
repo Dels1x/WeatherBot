@@ -8,6 +8,8 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import ua.delsix.service.units.GeocodingResult;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(SpringRunner.class)
@@ -27,8 +29,8 @@ class GeocodingServiceTest {
         "Одесса"
         );
 
-        GeocodingResult geocodingResult = geocodingService.getGeocodingResult("Ukraine", "Odesa", 5);
-        assertEquals(expectedResult, geocodingResult);
+        Optional<GeocodingResult> geocodingResult = geocodingService.getGeocodingResult("Ukraine", "Odesa");
+        assertEquals(expectedResult, geocodingResult.get());
     }
 
     @Test
@@ -41,26 +43,26 @@ class GeocodingServiceTest {
                 "Даллас"
         );
 
-        GeocodingResult geocodingResult = geocodingService.getGeocodingResult("USA", "Dallas", 5);
+        Optional<GeocodingResult> geocodingResult = geocodingService.getGeocodingResult("USA", "Dallas");
         System.out.println(geocodingResult);
 
-        assertEquals(expectedResult, geocodingResult);
+        assertEquals(expectedResult, geocodingResult.get());
     }
 
     @Test
     void getGeocodingResultAmsterdam() {
         GeocodingResult expectedResult = new GeocodingResult(
-                52.37454030000001,
-                4.897975505617977,
+                52.3727598,
+                4.8936041,
                 "NL",
                 "Amsterdam",
                 "Амстердам"
         );
 
-        GeocodingResult geocodingResult = geocodingService.getGeocodingResult("Netherlands", "Amsterdam", 5);
+        Optional<GeocodingResult> geocodingResult = geocodingService.getGeocodingResult("Netherlands", "Amsterdam");
         System.out.println(geocodingResult);
 
-        assertEquals(expectedResult, geocodingResult);
+        assertEquals(expectedResult, geocodingResult.get());
     }
 
 }

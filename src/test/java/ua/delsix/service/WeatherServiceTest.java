@@ -6,9 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
-import ua.delsix.service.units.Weather;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 
@@ -21,8 +18,21 @@ class WeatherServiceTest {
 
     @Test
     void getCurrentWeatherOdesa() throws IOException {
-        // how do I make test to something that is not static and changes over time lol
-        Weather output = weatherService.getCurrentWeather("Ukraine", "Odesa", "metric");
+        String output = weatherService.getCurrentWeather("Ukraine", "Odesa");
+
+        System.out.println(output);
+    }
+
+    @Test
+    void getSunriseTimeOdesa() throws IOException {
+        String output = weatherService.getSunriseTime("Ukraine", "Odesa");
+
+        System.out.println(output);
+    }
+
+    @Test
+    void getSunsetTimeOdesa() throws IOException {
+        String output = weatherService.getSunsetTime("Ukraine", "Odesa");
 
         System.out.println(output);
     }

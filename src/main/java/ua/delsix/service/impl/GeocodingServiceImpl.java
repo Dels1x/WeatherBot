@@ -28,7 +28,7 @@ public class GeocodingServiceImpl implements GeocodingService {
 
 
     @Override
-    public Optional<GeocodingResult> getGeocodingResult(String country, String city, int limit) {
+    public Optional<GeocodingResult> getGeocodingResult(String country, String city) {
         GeocodingResult geocodingResult = new GeocodingResult();
         String countryCode = getCountryCode(country);
         if (countryCode == null) {
@@ -42,7 +42,7 @@ public class GeocodingServiceImpl implements GeocodingService {
                 BASE_URL,
                 city,
                 countryCode,
-                limit,
+                5,
                 apiKey));
 
         Request request = new Request.Builder()
@@ -50,7 +50,7 @@ public class GeocodingServiceImpl implements GeocodingService {
                                 BASE_URL,
                                 city,
                                 countryCode,
-                                limit,
+                                5,
                                 apiKey))
                         .build();
 
@@ -88,7 +88,7 @@ public class GeocodingServiceImpl implements GeocodingService {
     }
 
     @Override
-    public List<GeocodingResult> getGeocodingResult(String city, int limit) {
+    public List<GeocodingResult> getGeocodingResult(String city) {
         GeocodingResult geocodingResult = new GeocodingResult();
         return null;
     }

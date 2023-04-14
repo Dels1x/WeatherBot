@@ -15,4 +15,6 @@ public class Weather {
     private double windSpeed;
     private String weatherName;
     private String weatherDesc;
+    private long sunriseTimestamp;
+    private long sunsetTimestamp;
 }

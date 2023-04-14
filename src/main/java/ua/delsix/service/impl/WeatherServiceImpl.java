@@ -9,6 +9,10 @@ import ua.delsix.service.GeocodingService;
 import ua.delsix.service.WeatherService;
 import ua.delsix.service.units.GeocodingResult;
 import ua.delsix.service.units.Weather;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -27,35 +31,76 @@ public class WeatherServiceImpl implements WeatherService {
     }
 
     @Override
-    public Weather getCurrentWeather(String country, String city, String units) throws IOException {
-        Weather weather = getWeather(country, city, units, 5);
+    public String getCurrentWeather(String country, String city) throws IOException {
+        Weather weather = getWeatherData(country, city);
+        GeocodingResult geocodingResult = weather.getGeocodingResult();
 
-        //TODO implement this method
+        String output = String.format(
+                "Weather in: %s, %s\n\n" +
+                "Weather: %s: %s\n" +
+                "Temperature: %.2f (feels like %.2f)\n" +
+                "Wind: %.2fm/s\n" +
+                "Humidity: %d",
+                geocodingResult.getCountryCode(), geocodingResult.getEnCityName(),
+                weather.getWeatherName(), weather.getWeatherDesc(),
+                weather.getRealTemp(), weather.getRealTemp(),
+                weather.getWindSpeed(),
+                weather.getHumidity());
 
-        return weather;
+        log.trace(String.format("WeatherServiceImpl:%d - Output:\n%s",
+                Thread.currentThread().getStackTrace()[1].getLineNumber(),
+                output));
+
+        return output;
     }
 
     @Override
-    public Weather getWeatherForecast(String country, String city) {
+    public String getWeatherForecast(String country, String city) throws IOException {
         //TODO implement this method
         return null;
     }
 
     @Override
-    public Weather getSunriseTime(String country, String city) {
-        //TODO implement this method
-        return null;
+    public String getSunriseTime(String country, String city) throws IOException {
+        Weather weather = getWeatherData(country, city);
+
+        LocalDateTime sunriseTime = LocalDateTime.ofInstant(
+                Instant.ofEpochSecond(weather.getSunriseTimestamp()),
+                ZoneId.systemDefault());
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        String sunriseString = sunriseTime.format(formatter);
+        String output = "The time of sunrise is: ".concat(sunriseString);
+
+        log.trace(String.format("WeatherServiceImpl:%d - Output:\n%s",
+                Thread.currentThread().getStackTrace()[1].getLineNumber(),
+                output));
+
+        return output;
     }
 
     @Override
-    public Weather getSunsetTime(String country, String city) {
-        //TODO implement this method
-        return null;
+    public String getSunsetTime(String country, String city) throws IOException {
+        Weather weather = getWeatherData(country, city);
+
+        LocalDateTime sunsetTime = LocalDateTime.ofInstant(
+                Instant.ofEpochSecond(weather.getSunsetTimestamp()),
+                ZoneId.systemDefault());
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        String sunriseString = sunsetTime.format(formatter);
+        String output = "The time of sunrise is: ".concat(sunriseString);
+
+        log.trace(String.format("WeatherServiceImpl:%d - Output:\n%s",
+                Thread.currentThread().getStackTrace()[1].getLineNumber(),
+                output));
+
+        return output;
     }
 
-    private Weather getWeather(String country, String city, String units, int limit) throws IOException {
+    public Weather getWeatherData(String country, String city) throws IOException {
         Weather weather = new Weather();
-        Optional<GeocodingResult> geocodingResult = geocodingService.getGeocodingResult(country, city, 5);
+        Optional<GeocodingResult> geocodingResult = geocodingService.getGeocodingResult(country, city);
 
         if(geocodingResult.isPresent()) {
             weather.setGeocodingResult(geocodingResult.get()); // get lat and lon coords from city
@@ -69,7 +114,7 @@ public class WeatherServiceImpl implements WeatherService {
                         CURRENT_WEATHER_URL,
                         weather.getGeocodingResult().getLat(),
                         weather.getGeocodingResult().getLon(),
-                        units,
+                        "metric",
                         apiKey));
 
         Request request = new Request.Builder()
@@ -77,7 +122,7 @@ public class WeatherServiceImpl implements WeatherService {
                         CURRENT_WEATHER_URL,
                         weather.getGeocodingResult().getLat(),
                         weather.getGeocodingResult().getLon(),
-                        units,
+                        "metric",
                         apiKey))
                 .build();
 
@@ -91,6 +136,9 @@ public class WeatherServiceImpl implements WeatherService {
             JSONObject mainObject = jsonObject.getJSONObject("main");
             JSONObject weatherObject = jsonObject.getJSONArray("weather").getJSONObject(0);
             JSONObject windObject = jsonObject.getJSONObject("wind");
+            JSONObject sysObject = jsonObject.getJSONObject("sys");
+
+            log.trace(jsonObject.toString());
 
             weather.setRealTemp(mainObject.getDouble("temp"));
             weather.setFeelsLikeTemp(mainObject.getDouble("feels_like"));
@@ -98,6 +146,8 @@ public class WeatherServiceImpl implements WeatherService {
             weather.setWindSpeed(windObject.getDouble("speed"));
             weather.setWeatherName(weatherObject.getString("main"));
             weather.setWeatherDesc(weatherObject.getString("description"));
+            weather.setSunriseTimestamp(sysObject.getLong("sunrise"));
+            weather.setSunsetTimestamp(sysObject.getLong("sunset"));
 
         } else {
             log.error(String.format("WeatherServiceImpl:%d - Response code: %d",
