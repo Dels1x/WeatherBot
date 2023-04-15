@@ -101,8 +101,6 @@ public class GeocodingServiceImpl implements GeocodingService {
             if(l.getDisplayCountry().equalsIgnoreCase(countryName)) {
                 return iso;
             }
-
-            log.trace(l.getDisplayCountry());
         }
 
         log.trace("Locale.getISOCountries(): "+ Arrays.toString(Locale.getISOCountries()));
