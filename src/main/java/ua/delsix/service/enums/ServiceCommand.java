@@ -32,8 +32,10 @@ public enum ServiceCommand {
     }
 
     public static ServiceCommand fromValue(String value) {
+        System.out.println(value);
         for(ServiceCommand command: ServiceCommand.values()) {
-            if(command.equals(value))
+            System.out.println(command);
+            if(command.value.equals(value))
                 return command;
         }
 
