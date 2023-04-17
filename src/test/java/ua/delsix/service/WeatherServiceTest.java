@@ -18,7 +18,14 @@ class WeatherServiceTest {
 
     @Test
     void getCurrentWeatherOdesa() throws IOException {
-        String output = weatherService.getCurrentWeather("Ukraine", "Odesa");
+        String output = weatherService.getWeather("Ukraine", "Odesa");
+
+        System.out.println(output);
+    }
+
+    @Test
+    void getForecastOdesa() throws IOException {
+        String output = weatherService.getWeatherForecast("Ukraine", "Odesa");
 
         System.out.println(output);
     }
@@ -36,5 +43,6 @@ class WeatherServiceTest {
 
         System.out.println(output);
     }
+
 
 }

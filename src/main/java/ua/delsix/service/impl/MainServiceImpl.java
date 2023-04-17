@@ -47,7 +47,7 @@ public class MainServiceImpl implements MainService {
                     return "Usage: /weather <country> <city>";
                 }
 
-                return weatherService.getCurrentWeather(commandList.get(1), commandList.get(2));
+                return weatherService.getWeather(commandList.get(1), commandList.get(2));
             case FORECAST:
                 if (commandList.size() < 3) {
                     return "Usage: /forecast <country> <city>";

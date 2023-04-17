@@ -17,4 +17,14 @@ public class Weather {
     private String weatherDesc;
     private long sunriseTimestamp;
     private long sunsetTimestamp;
+
+    public Weather(GeocodingResult geocodingResult, double realTemp, double feelsLikeTemp, int humidity, double windSpeed, String weatherName, String weatherDesc) {
+        this.geocodingResult = geocodingResult;
+        this.realTemp = realTemp;
+        this.feelsLikeTemp = feelsLikeTemp;
+        this.humidity = humidity;
+        this.windSpeed = windSpeed;
+        this.weatherName = weatherName;
+        this.weatherDesc = weatherDesc;
+    }
 }
