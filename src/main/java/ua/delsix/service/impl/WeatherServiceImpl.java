@@ -47,7 +47,7 @@ public class WeatherServiceImpl implements WeatherService {
                 "Humidity: %d",
                 geocodingResult.getCountryCode(), geocodingResult.getEnCityName(),
                 weather.getWeatherName(), weather.getWeatherDesc(),
-                weather.getRealTemp(), weather.getRealTemp(),
+                weather.getRealTemp(), weather.getFeelsLikeTemp(),
                 weather.getWindSpeed(),
                 weather.getHumidity());
 
@@ -60,13 +60,46 @@ public class WeatherServiceImpl implements WeatherService {
 
     @Override
     public String getWeatherForecast(String country, String city) throws IOException {
-        Map<Integer, Weather> forecast = getForecast(country, city);
+        TreeMap<Integer, Weather> forecast = getForecast(country, city);
         assert forecast != null;
-        Set<Integer> keys = forecast.keySet();
-        String output = "";
 
-        System.out.println(keys);
-        return forecast.toString();
+        Set<Integer> keys = forecast.keySet();
+        GeocodingResult geocodingResult = forecast.firstEntry().getValue().getGeocodingResult();
+        String output = String.format(
+                "Weather in: %s, %s\n\n" +
+                "%s%s%s%s%s\n",
+                geocodingResult.getCountryCode(),
+                geocodingResult.getEnCityName(),
+                getPaddingString("Date", 20),
+                getPaddingString("Name", 12),
+                getPaddingString("Temp", 8),
+                getPaddingString("Wind", 8),
+                getPaddingString("Humidity", 8));
+
+
+        log.trace(keys);
+
+        int counter = 0;
+
+        for(int key: keys) {
+            if (counter < 8 || counter % 2 == 0) {
+                output = output.concat(String.format(
+                        "%s: %s\t%.2f\t%8.2fm/s\t%d\n",
+                        getPaddingString(convertUnixTimeToDateTime(key), 20),
+                        getPaddingString(forecast.get(key).getWeatherName(), 12),
+                        forecast.get(key).getRealTemp(),
+                        forecast.get(key).getWindSpeed(),
+                        forecast.get(key).getHumidity()));
+            }
+
+            counter++;
+        }
+
+        log.trace(String.format("WeatherServiceImpl:%d - Output:\n%s",
+                Thread.currentThread().getStackTrace()[1].getLineNumber(),
+                output));
+
+        return output;
     }
 
     @Override
@@ -165,8 +198,8 @@ public class WeatherServiceImpl implements WeatherService {
         return weather;
     }
 
-    private Map<Integer, Weather> getForecast(String country, String city) throws IOException {
-        Map<Integer, Weather> forecast = new TreeMap<>();
+    private TreeMap<Integer, Weather> getForecast(String country, String city) throws IOException {
+        TreeMap<Integer, Weather> forecast = new TreeMap<>();
         GeocodingResult geocodingResult = geocodingService.getGeocodingResult(country, city)
                 .orElse(null);
 
@@ -202,8 +235,6 @@ public class WeatherServiceImpl implements WeatherService {
             JSONObject jsonObject = new JSONObject(responseBody);
             JSONArray dtList = jsonObject.getJSONArray("list");
 
-            log.trace(jsonObject.toString());
-
             for(int i = 0; i < dtList.length(); i++) {
                 JSONObject object = dtList.getJSONObject(i);
                 forecast.put(object.getInt("dt"), getWeatherDataFromJSON(object, geocodingResult));
@@ -215,10 +246,6 @@ public class WeatherServiceImpl implements WeatherService {
                     response.code()));
             throw new ApiException("API returned non-200 status code", response.code());
         }
-
-        log.trace(String.format("WeatherServiceImpl:%d - Weather List: %s",
-                Thread.currentThread().getStackTrace()[1].getLineNumber(),
-                forecast));
 
         return forecast;
     }
@@ -234,5 +261,22 @@ public class WeatherServiceImpl implements WeatherService {
         weather.setGeocodingResult(geocodingResult);
 
         return weather;
+    }
+
+    private String convertUnixTimeToDateTime(int unixTime) {
+        Instant instant = Instant.ofEpochSecond(unixTime);
+        LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd' 'MMMM HH:mm");
+        return dateTime.format(formatter);
+    }
+
+    private String getPaddingString(String str, int columnWidth) {
+        if(str.length() > columnWidth) {
+            return str.substring(0, columnWidth);
+        }
+
+        int spacesNum = columnWidth -str.length();
+
+        return str + " ".repeat(spacesNum);
     }
 }
