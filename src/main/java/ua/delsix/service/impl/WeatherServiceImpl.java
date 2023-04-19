@@ -59,47 +59,22 @@ public class WeatherServiceImpl implements WeatherService {
     }
 
     @Override
-    public String getWeatherForecast(String country, String city) throws IOException {
+    public Forecast getWeatherForecast(String country, String city) throws IOException {
         TreeMap<Integer, Weather> forecast = getForecast(country, city);
         assert forecast != null;
 
-        Set<Integer> keys = forecast.keySet();
         GeocodingResult geocodingResult = forecast.firstEntry().getValue().getGeocodingResult();
         String output = String.format(
                 "Weather in: %s, %s\n\n" +
-                "%s%s%s%s%s\n",
+                "Choose a date using the buttons below",
                 geocodingResult.getCountryCode(),
-                geocodingResult.getEnCityName(),
-                getPaddingString("Date", 20),
-                getPaddingString("Name", 12),
-                getPaddingString("Temp", 8),
-                getPaddingString("Wind", 8),
-                getPaddingString("Humidity", 8));
-
-
-        log.trace(keys);
-
-        int counter = 0;
-
-        for(int key: keys) {
-            if (counter < 8 || counter % 2 == 0) {
-                output = output.concat(String.format(
-                        "%s: %s\t%.2f\t%8.2fm/s\t%d\n",
-                        getPaddingString(convertUnixTimeToDateTime(key), 20),
-                        getPaddingString(forecast.get(key).getWeatherName(), 12),
-                        forecast.get(key).getRealTemp(),
-                        forecast.get(key).getWindSpeed(),
-                        forecast.get(key).getHumidity()));
-            }
-
-            counter++;
-        }
+                geocodingResult.getEnCityName());
 
         log.trace(String.format("WeatherServiceImpl:%d - Output:\n%s",
                 Thread.currentThread().getStackTrace()[1].getLineNumber(),
                 output));
 
-        return output;
+        return new Forecast(forecast, output);
     }
 
     @Override

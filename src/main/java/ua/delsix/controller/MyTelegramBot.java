@@ -13,20 +13,25 @@ import java.io.IOException;
 
 @Component
 @Log4j
-public class TelegramBot extends TelegramLongPollingBot {
+public class MyTelegramBot extends TelegramLongPollingBot {
     @Value("${bot.name}")
     private String botName;
     @Value("${bot.token}")
     private String botToken;
     private final UpdateController updateController;
 
-    public TelegramBot(UpdateController updateController) {
+    public MyTelegramBot(UpdateController updateController) {
         this.updateController = updateController;
     }
 
     @PostConstruct
     public void registrateBotInUpdateController() {
         updateController.registrateBot(this);
+    }
+
+    @PostConstruct
+    private void setCallbackQueryHandler() {
+
     }
 
     @Override
