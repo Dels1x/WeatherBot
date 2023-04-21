@@ -157,8 +157,7 @@ public class MainServiceImpl implements MainService {
 
         if (data.startsWith("day")) {
             Forecast forecast = weatherService.getWeatherForecast(country, city);
-            String newMessage = "Weather in: UA, Odesa\n\n" +
-                    "Choose a time using the buttons below";
+            String newMessage = "Choose desired time using the buttons below";
 
             System.out.println(forecast.getDtSteps());
 
@@ -264,7 +263,7 @@ public class MainServiceImpl implements MainService {
             editMessageText.setChatId(chatId);
             editMessageText.setMessageId(messageId);
             editMessageText.setText(forecast.getMessage()
-                    .concat("Choose time using the buttons below"));
+                    .concat(newMessage));
             InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
             inlineKeyboardMarkup.setKeyboard(keyboard);
             editMessageText.setReplyMarkup(inlineKeyboardMarkup);
