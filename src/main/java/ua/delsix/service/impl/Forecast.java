@@ -16,12 +16,12 @@ import java.util.TreeMap;
 @ToString
 public class Forecast {
     private TreeMap<Integer, Weather> forecast = new TreeMap<>();
-    private Set<Integer> dtSteps;
+    private int[] dtSteps;
     private String message;
 
     public Forecast(TreeMap<Integer, Weather> forecast, String message) {
         this.forecast = forecast;
         this.message = message;
-        this.dtSteps = forecast.keySet();
+        this.dtSteps = forecast.keySet().stream().mapToInt(Integer::intValue).toArray();
     }
 }

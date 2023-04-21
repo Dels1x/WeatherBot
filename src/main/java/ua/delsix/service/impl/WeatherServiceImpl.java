@@ -51,7 +51,7 @@ public class WeatherServiceImpl implements WeatherService {
                 weather.getWindSpeed(),
                 weather.getHumidity());
 
-        log.trace(String.format("WeatherServiceImpl:%d - Output:\n%s",
+        log.debug(String.format("WeatherServiceImpl:%d - Output:\n%s",
                 Thread.currentThread().getStackTrace()[1].getLineNumber(),
                 output));
 
@@ -70,7 +70,7 @@ public class WeatherServiceImpl implements WeatherService {
                 geocodingResult.getCountryCode(),
                 geocodingResult.getEnCityName());
 
-        log.trace(String.format("WeatherServiceImpl:%d - Output:\n%s",
+        log.debug(String.format("WeatherServiceImpl:%d - Output:\n%s",
                 Thread.currentThread().getStackTrace()[1].getLineNumber(),
                 output));
 
@@ -90,7 +90,7 @@ public class WeatherServiceImpl implements WeatherService {
         String sunriseString = sunriseTime.format(formatter);
         String output = "The time of sunrise is: ".concat(sunriseString);
 
-        log.trace(String.format("WeatherServiceImpl:%d - Output:\n%s",
+        log.debug(String.format("WeatherServiceImpl:%d - Output:\n%s",
                 Thread.currentThread().getStackTrace()[1].getLineNumber(),
                 output));
 
@@ -110,7 +110,7 @@ public class WeatherServiceImpl implements WeatherService {
         String sunriseString = sunsetTime.format(formatter);
         String output = "The time of sunrise is: ".concat(sunriseString);
 
-        log.trace(String.format("WeatherServiceImpl:%d - Output:\n%s",
+        log.debug(String.format("WeatherServiceImpl:%d - Output:\n%s",
                 Thread.currentThread().getStackTrace()[1].getLineNumber(),
                 output));
 
@@ -123,11 +123,11 @@ public class WeatherServiceImpl implements WeatherService {
                 .orElse(null);
 
         if (geocodingResult == null) {
-            log.debug("Could not find coords to: " + country + " " + city);
+            log.info("Could not find coords to: " + country + " " + city);
             return null;
         }
 
-        log.trace(String.format(
+        log.debug(String.format(
                 "WeatherServiceImpl:%d - API call:%s?lat=%f&lon=%f&units=%s&appid=%s",
                         Thread.currentThread().getStackTrace()[1].getLineNumber(),
                         CURRENT_WEATHER_URL,
@@ -153,8 +153,6 @@ public class WeatherServiceImpl implements WeatherService {
             String responseBody = response.body().string();
             JSONObject jsonObject = new JSONObject(responseBody);
 
-            log.trace(jsonObject.toString());
-
             weather = getWeatherDataFromJSON(jsonObject, geocodingResult);
             weather.setSunriseTimestamp(jsonObject.getJSONObject("sys").getLong("sunrise"));
             weather.setSunsetTimestamp(jsonObject.getJSONObject("sys").getLong("sunset"));
@@ -179,11 +177,11 @@ public class WeatherServiceImpl implements WeatherService {
                 .orElse(null);
 
         if (geocodingResult == null) {
-            log.debug("Could not find coords to: " + country + " " + city);
+            log.info("Could not find coords to: " + country + " " + city);
             return null;
         }
 
-        log.trace(String.format(
+        log.debug(String.format(
                 "WeatherServiceImpl:%d - API call:%s?lat=%f&lon=%f&units=%s&appid=%s",
                 Thread.currentThread().getStackTrace()[1].getLineNumber(),
                 FORECAST_URL,

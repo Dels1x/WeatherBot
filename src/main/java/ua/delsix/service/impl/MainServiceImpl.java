@@ -14,6 +14,7 @@ import ua.delsix.service.enums.ServiceCommand;
 import ua.delsix.utils.MessageUtils;
 
 import java.io.IOException;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -67,13 +68,16 @@ public class MainServiceImpl implements MainService {
                 log.trace(String.format("MainServiceImpl>:%d - Processing forecast command...:\n",
                         Thread.currentThread().getStackTrace()[1].getLineNumber()));
 
-                Forecast forecast = weatherService.getWeatherForecast(commandList.get(1), commandList.get(2));
-
                 if (commandList.size() < 3) {
                     return MessageUtils.sendMessageBuilder(
                             update,
                             "Usage: /forecast <country> <city>");
                 }
+
+                String country = commandList.get(1);
+                String city = commandList.get(2);
+
+                Forecast forecast = weatherService.getWeatherForecast(country, city);
 
                 List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
                 List<InlineKeyboardButton> mainRow = new ArrayList<>();
@@ -91,7 +95,13 @@ public class MainServiceImpl implements MainService {
 
                 for(List<InlineKeyboardButton> row: keyboard) {
                     for (InlineKeyboardButton inlineKeyboardButton : row) {
-                        inlineKeyboardButton.setCallbackData("day".concat(String.valueOf(++counter)));
+                        inlineKeyboardButton.setCallbackData(
+                                        "day"
+                                        .concat(String.valueOf(++counter))
+                                        .concat("|")
+                                        .concat(country)
+                                        .concat("|")
+                                        .concat(city));
                     }
                 }
 
@@ -134,12 +144,70 @@ public class MainServiceImpl implements MainService {
     @Override
     public SendMessage processForecastCallbackQuery(Update update) throws IOException {
         CallbackQuery callbackQuery = update.getCallbackQuery();
-        String callbackData = callbackQuery.getData();
+        long messageId = callbackQuery.getMessage().getMessageId();
+        long chatId = callbackQuery.getMessage().getChatId();
+        String[] callbackData = callbackQuery.getData().split("\\|");
+        String data = callbackData[0];
+        String country = callbackData[1];
+        String city = callbackData[2];
 
         log.trace("MainService: processing user's callback query: "+callbackData);
 
-        if (callbackData.startsWith("day")) {
-            //TODO
+
+
+        if (data.startsWith("day")) {
+            Forecast forecast = weatherService.getWeatherForecast(country, city);
+            String newMessage = "Weather in: UA, Odesa\n\n" +
+                    "Choose a time using the buttons below";
+
+            System.out.println(forecast.getDtSteps());
+
+            long endOfDay = LocalDate.now()
+                            .atTime(LocalTime.MAX)
+                            .toEpochSecond(ZoneOffset.UTC);
+
+            List<List<Integer>> days = new ArrayList<>();
+            for(int i = 0; i < 6; i++) {
+                days.add(new ArrayList<>());
+            }
+
+            byte counterA = 1, counterB = 0;
+
+            for(Integer dtStep: forecast.getDtSteps()) {
+                if(dtStep < endOfDay) {
+                    days.get(0).add(dtStep);
+                    log.trace("DtStep added to day0: "+dtStep);
+                    continue;
+                }
+
+                if(counterB == 8) {
+                    counterA++;
+                    counterB = 0;
+                }
+
+                days.get(counterA).add(dtStep);
+                counterB++;
+
+                log.trace(String.format(
+                                "dtStep - %d " +
+                                "counterA - %d " +
+                                "counterB - %d\n",
+                                dtStep,
+                                counterA,
+                                counterB
+                ));
+            }
+
+            log.trace("Days list: "+days);
+
+
+            List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+
+            switch(data) {
+                //TODO
+            }
+
+
         }
 
         return null;
