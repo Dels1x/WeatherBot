@@ -23,7 +23,7 @@ public class UpdateController {
 
     public void processUpdate(Update update) throws IOException {
         if(update.hasCallbackQuery()) {
-            mainService.processForecastCallbackQuery(update);
+            myTelegramBot.editAnswerMessage(mainService.processForecastCallbackQuery(update));
         } else if (update.getMessage().hasText()) {
             myTelegramBot.sendAnswerMessage(mainService.processUserCommand(update));
         } else {

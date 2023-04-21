@@ -1,9 +1,9 @@
 package ua.delsix.service.impl;
 
-import com.google.gson.Gson;
 import lombok.extern.log4j.Log4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -15,6 +15,7 @@ import ua.delsix.utils.MessageUtils;
 
 import java.io.IOException;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -107,7 +108,8 @@ public class MainServiceImpl implements MainService {
 
                 SendMessage sendMessage = MessageUtils.sendMessageBuilder(
                         update,
-                        forecast.getMessage());
+                        forecast.getMessage()
+                                .concat("Choose a date using the buttons below"));
 
                 InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
                 markup.setKeyboard(keyboard);
@@ -142,18 +144,16 @@ public class MainServiceImpl implements MainService {
     }
 
     @Override
-    public SendMessage processForecastCallbackQuery(Update update) throws IOException {
+    public EditMessageText processForecastCallbackQuery(Update update) throws IOException {
         CallbackQuery callbackQuery = update.getCallbackQuery();
-        long messageId = callbackQuery.getMessage().getMessageId();
+        int messageId = callbackQuery.getMessage().getMessageId();
         long chatId = callbackQuery.getMessage().getChatId();
         String[] callbackData = callbackQuery.getData().split("\\|");
+        log.trace("MainService: processing user's callback query: "+ Arrays.toString(callbackData));
+
         String data = callbackData[0];
         String country = callbackData[1];
         String city = callbackData[2];
-
-        log.trace("MainService: processing user's callback query: "+callbackData);
-
-
 
         if (data.startsWith("day")) {
             Forecast forecast = weatherService.getWeatherForecast(country, city);
@@ -202,12 +202,73 @@ public class MainServiceImpl implements MainService {
 
 
             List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+            List<InlineKeyboardButton> mainRow = new ArrayList<>();
+            List<InlineKeyboardButton> secondRow = new ArrayList<>();
+            List<InlineKeyboardButton> cancelRow = new ArrayList<>();
+            keyboard.add(mainRow);
+            keyboard.add(secondRow);
+            keyboard.add(cancelRow);
+
+
 
             switch(data) {
-                //TODO
+                case "day1" -> {
+
+                }
             }
 
 
+            int dayNumber = data.charAt(data.length() - 1) - '0' - 1; // gets the last number of data variable
+            List<Integer> theDay = days.get(dayNumber);
+            int daysSize = theDay.size();
+            for(int i = 0; i <  daysSize; i++) {
+                Instant instant = Instant.ofEpochSecond(theDay.get(i));
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm")
+                                .withZone(ZoneId.systemDefault());
+                String timeString = formatter.format(instant);
+
+                System.out.println(timeString);
+
+                InlineKeyboardButton button = new InlineKeyboardButton(timeString);
+                button.setCallbackData(
+                        "time|"
+                                .concat(timeString)
+                                .concat("|")
+                                .concat(data)
+                                .concat("|")
+                                .concat(country)
+                                .concat("|")
+                                .concat(city));
+
+                if(i > daysSize / 2) {
+                    secondRow.add(button);
+                } else {
+                    mainRow.add(button);
+                }
+            }
+
+            InlineKeyboardButton button = new InlineKeyboardButton("Go back");
+            button.setCallbackData(
+                    "time|"
+                            .concat("cancel")
+                            .concat("|")
+                            .concat(data)
+                            .concat("|")
+                            .concat(country)
+                            .concat("|")
+                            .concat(city));
+
+            cancelRow.add(button);
+
+            EditMessageText editMessageText = new EditMessageText();
+            editMessageText.setChatId(chatId);
+            editMessageText.setMessageId(messageId);
+            editMessageText.setText(forecast.getMessage()
+                    .concat("Choose time using the buttons below"));
+            InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+            inlineKeyboardMarkup.setKeyboard(keyboard);
+            editMessageText.setReplyMarkup(inlineKeyboardMarkup);
+            return editMessageText;
         }
 
         return null;

@@ -65,8 +65,7 @@ public class WeatherServiceImpl implements WeatherService {
 
         GeocodingResult geocodingResult = forecast.firstEntry().getValue().getGeocodingResult();
         String output = String.format(
-                "Weather in: %s, %s\n\n" +
-                "Choose a date using the buttons below",
+                "Weather in: %s, %s\n\n",
                 geocodingResult.getCountryCode(),
                 geocodingResult.getEnCityName());
 
