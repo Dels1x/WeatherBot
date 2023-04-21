@@ -146,6 +146,23 @@ public class MainServiceImpl implements MainService {
     @Override
     public EditMessageText processForecastCallbackQuery(Update update) throws IOException {
         CallbackQuery callbackQuery = update.getCallbackQuery();
+        String[] callbackData = callbackQuery.getData().split("\\|");
+        log.trace("MainService: processing user's callback query: "+ Arrays.toString(callbackData));
+
+        String data = callbackData[0];
+
+        if(data.startsWith("day")) {
+            return handleDayButton(callbackQuery);
+        } else if (data.startsWith("time")) {
+            return handleTimeButton(callbackQuery);
+        } else if (data.startsWith("cancel")) {
+            return handleCancelButton(callbackQuery);
+        }
+
+        return null;
+    }
+
+    private EditMessageText handleDayButton(CallbackQuery callbackQuery) throws IOException {
         int messageId = callbackQuery.getMessage().getMessageId();
         long chatId = callbackQuery.getMessage().getChatId();
         String[] callbackData = callbackQuery.getData().split("\\|");
@@ -155,101 +172,79 @@ public class MainServiceImpl implements MainService {
         String country = callbackData[1];
         String city = callbackData[2];
 
-        if (data.startsWith("day")) {
-            Forecast forecast = weatherService.getWeatherForecast(country, city);
-            String newMessage = "Choose desired time using the buttons below";
+        Forecast forecast = weatherService.getWeatherForecast(country, city);
+        String newMessage = "Choose desired time using the buttons below";
 
-            System.out.println(forecast.getDtSteps());
+        System.out.println(forecast.getDtSteps());
 
-            long endOfDay = LocalDate.now()
-                            .atTime(LocalTime.MAX)
-                            .toEpochSecond(ZoneOffset.UTC);
+        long endOfDay = LocalDate.now()
+                .atTime(LocalTime.MAX)
+                .toEpochSecond(ZoneOffset.UTC);
 
-            List<List<Integer>> days = new ArrayList<>();
-            for(int i = 0; i < 6; i++) {
-                days.add(new ArrayList<>());
+        List<List<Integer>> days = new ArrayList<>();
+        for(int i = 0; i < 6; i++) {
+            days.add(new ArrayList<>());
+        }
+
+        byte counterA = 1, counterB = 0;
+
+        for(Integer dtStep: forecast.getDtSteps()) {
+            if(forecast.getDtSteps()[0] > endOfDay) {
+                newMessage = "No avalaible time-stops during this day";
+                break;
+            }
+            if(dtStep < endOfDay) {
+                days.get(0).add(dtStep);
+                log.trace("DtStep added to day0: "+dtStep);
+                continue;
             }
 
-            byte counterA = 1, counterB = 0;
-
-            for(Integer dtStep: forecast.getDtSteps()) {
-                if(dtStep < endOfDay) {
-                    days.get(0).add(dtStep);
-                    log.trace("DtStep added to day0: "+dtStep);
-                    continue;
-                }
-
-                if(counterB == 8) {
-                    counterA++;
-                    counterB = 0;
-                }
-
-                days.get(counterA).add(dtStep);
-                counterB++;
-
-                log.trace(String.format(
-                                "dtStep - %d " +
-                                "counterA - %d " +
-                                "counterB - %d\n",
-                                dtStep,
-                                counterA,
-                                counterB
-                ));
+            if(counterB == 8) {
+                counterA++;
+                counterB = 0;
             }
 
-            log.trace("Days list: "+days);
+            days.get(counterA).add(dtStep);
+            counterB++;
+
+            log.trace(String.format(
+                    "dtStep - %d " +
+                            "counterA - %d " +
+                            "counterB - %d\n",
+                    dtStep,
+                    counterA,
+                    counterB
+            ));
+        }
+
+        log.trace("Days list: "+days);
 
 
-            List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-            List<InlineKeyboardButton> mainRow = new ArrayList<>();
-            List<InlineKeyboardButton> secondRow = new ArrayList<>();
-            List<InlineKeyboardButton> cancelRow = new ArrayList<>();
-            keyboard.add(mainRow);
-            keyboard.add(secondRow);
-            keyboard.add(cancelRow);
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        List<InlineKeyboardButton> mainRow = new ArrayList<>();
+        List<InlineKeyboardButton> secondRow = new ArrayList<>();
+        List<InlineKeyboardButton> cancelRow = new ArrayList<>();
+        keyboard.add(mainRow);
+        keyboard.add(secondRow);
+        keyboard.add(cancelRow);
 
+        int dayNumber = data.charAt(data.length() - 1) - '0' - 1; // gets the last number of data variable
+        List<Integer> theDay = days.get(dayNumber);
+        int daysSize = theDay.size();
+        for(int i = 0; i <  daysSize; i++) {
+            Instant instant = Instant.ofEpochSecond(theDay.get(i));
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm")
+                    .withZone(ZoneId.systemDefault());
+            String timeString = formatter.format(instant);
 
+            System.out.println(timeString);
 
-            switch(data) {
-                case "day1" -> {
-
-                }
-            }
-
-
-            int dayNumber = data.charAt(data.length() - 1) - '0' - 1; // gets the last number of data variable
-            List<Integer> theDay = days.get(dayNumber);
-            int daysSize = theDay.size();
-            for(int i = 0; i <  daysSize; i++) {
-                Instant instant = Instant.ofEpochSecond(theDay.get(i));
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm")
-                                .withZone(ZoneId.systemDefault());
-                String timeString = formatter.format(instant);
-
-                System.out.println(timeString);
-
-                InlineKeyboardButton button = new InlineKeyboardButton(timeString);
-                button.setCallbackData(
-                        "time|"
-                                .concat(timeString)
-                                .concat("|")
-                                .concat(data)
-                                .concat("|")
-                                .concat(country)
-                                .concat("|")
-                                .concat(city));
-
-                if(i > daysSize / 2) {
-                    secondRow.add(button);
-                } else {
-                    mainRow.add(button);
-                }
-            }
-
-            InlineKeyboardButton button = new InlineKeyboardButton("Go back");
+            InlineKeyboardButton button = new InlineKeyboardButton(timeString);
             button.setCallbackData(
                     "time|"
-                            .concat("cancel")
+                            .concat(String.valueOf(dayNumber))
+                            .concat("|")
+                            .concat(String.valueOf(i))
                             .concat("|")
                             .concat(data)
                             .concat("|")
@@ -257,19 +252,43 @@ public class MainServiceImpl implements MainService {
                             .concat("|")
                             .concat(city));
 
-            cancelRow.add(button);
-
-            EditMessageText editMessageText = new EditMessageText();
-            editMessageText.setChatId(chatId);
-            editMessageText.setMessageId(messageId);
-            editMessageText.setText(forecast.getMessage()
-                    .concat(newMessage));
-            InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-            inlineKeyboardMarkup.setKeyboard(keyboard);
-            editMessageText.setReplyMarkup(inlineKeyboardMarkup);
-            return editMessageText;
+            if(i > daysSize / 2) {
+                secondRow.add(button);
+            } else {
+                mainRow.add(button);
+            }
         }
 
+        InlineKeyboardButton button = new InlineKeyboardButton("Go back");
+        button.setCallbackData(
+                "time|"
+                        .concat("cancel")
+                        .concat("|")
+                        .concat(data)
+                        .concat("|")
+                        .concat(country)
+                        .concat("|")
+                        .concat(city));
+
+        cancelRow.add(button);
+
+        EditMessageText editMessageText = new EditMessageText();
+        editMessageText.setChatId(chatId);
+        editMessageText.setMessageId(messageId);
+        editMessageText.setText(forecast.getMessage()
+                .concat(newMessage));
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        inlineKeyboardMarkup.setKeyboard(keyboard);
+        editMessageText.setReplyMarkup(inlineKeyboardMarkup);
+        return editMessageText;
+    }
+
+    private EditMessageText handleCancelButton(CallbackQuery callbackQuery) {
         return null;
     }
+
+    private EditMessageText handleTimeButton(CallbackQuery callbackQuery) {
+        return null;
+    }
+
 }
