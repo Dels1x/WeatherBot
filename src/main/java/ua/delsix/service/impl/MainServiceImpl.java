@@ -75,47 +75,7 @@ public class MainServiceImpl implements MainService {
                             "Usage: /forecast <country> <city>");
                 }
 
-                String country = commandList.get(1);
-                String city = commandList.get(2);
-
-                Forecast forecast = weatherService.getWeatherForecast(country, city);
-
-                List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
-                List<InlineKeyboardButton> mainRow = new ArrayList<>();
-                List<InlineKeyboardButton> secondRow = new ArrayList<>();
-                mainRow.add(new InlineKeyboardButton("Today"));
-                mainRow.add(new InlineKeyboardButton("Tomorrow"));
-                secondRow.add(new InlineKeyboardButton("Day 3"));
-                secondRow.add(new InlineKeyboardButton("Day 4"));
-                secondRow.add(new InlineKeyboardButton("Day 5"));
-
-                keyboard.add(mainRow);
-                keyboard.add(secondRow);
-
-                int counter = 0;
-
-                for(List<InlineKeyboardButton> row: keyboard) {
-                    for (InlineKeyboardButton inlineKeyboardButton : row) {
-                        inlineKeyboardButton.setCallbackData(
-                                        "day"
-                                        .concat(String.valueOf(++counter))
-                                        .concat("|")
-                                        .concat(country)
-                                        .concat("|")
-                                        .concat(city));
-                    }
-                }
-
-                SendMessage sendMessage = MessageUtils.sendMessageBuilder(
-                        update,
-                        forecast.getMessage()
-                                .concat("Choose a date using the buttons below"));
-
-                InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-                markup.setKeyboard(keyboard);
-                sendMessage.setReplyMarkup(markup);
-
-                return sendMessage;
+                return processForecastCommand(update, commandList);
             }
             case SUNRISE -> {
                 if (commandList.size() < 3) {
@@ -143,6 +103,73 @@ public class MainServiceImpl implements MainService {
         return null;
     }
 
+    private SendMessage processForecastCommand(Update update, List<String> commandList) throws IOException {
+        String country = commandList.get(1);
+        String city = commandList.get(2);
+
+        Forecast forecast = weatherService.getWeatherForecast(country, city);
+
+        SendMessage sendMessage = MessageUtils.sendMessageBuilder(
+                update,
+                forecast.getMessage()
+                        .concat("Choose a date using the buttons below"));
+
+        sendMessage.setReplyMarkup(forecastKeyboardMarkupFactory(forecast, country, city));
+
+        return sendMessage;
+    }
+
+    private EditMessageText processForecastCommand(CallbackQuery callbackQuery, String[] callbackData) throws IOException {
+        String country = callbackData[1];
+        String city = callbackData[2];
+
+        Forecast forecast = weatherService.getWeatherForecast(country, city);
+
+        EditMessageText editMessageText = new EditMessageText();
+        editMessageText.setChatId(callbackQuery.getMessage().getChatId());
+        editMessageText.setMessageId(callbackQuery.getMessage().getMessageId());
+        editMessageText.setText(forecast.getMessage()
+                .concat("Choose a date using buttons below"));
+        editMessageText.setReplyMarkup(forecastKeyboardMarkupFactory(forecast, country, city));
+
+        return editMessageText;
+    }
+
+    private InlineKeyboardMarkup forecastKeyboardMarkupFactory(Forecast forecast, String country, String city) {
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        List<InlineKeyboardButton> mainRow = new ArrayList<>();
+        List<InlineKeyboardButton> secondRow = new ArrayList<>();
+        mainRow.add(new InlineKeyboardButton("Today"));
+        mainRow.add(new InlineKeyboardButton("Tomorrow"));
+        secondRow.add(new InlineKeyboardButton("Day 3"));
+        secondRow.add(new InlineKeyboardButton("Day 4"));
+        secondRow.add(new InlineKeyboardButton("Day 5"));
+
+        //TODO set appropriate unix date for buttons
+
+        keyboard.add(mainRow);
+        keyboard.add(secondRow);
+
+        int counter = 0;
+
+        for(List<InlineKeyboardButton> row: keyboard) {
+            for (InlineKeyboardButton inlineKeyboardButton : row) {
+                inlineKeyboardButton.setCallbackData(
+                        "day"
+                                .concat(String.valueOf(++counter))
+                                .concat("|")
+                                .concat(country)
+                                .concat("|")
+                                .concat(city));
+            }
+        }
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(keyboard);
+
+        return markup;
+    }
+
     @Override
     public EditMessageText processForecastCallbackQuery(Update update) throws IOException {
         CallbackQuery callbackQuery = update.getCallbackQuery();
@@ -151,12 +178,15 @@ public class MainServiceImpl implements MainService {
 
         String data = callbackData[0];
 
-        if(data.startsWith("day")) {
+        System.out.println(callbackData[1].startsWith("cancel"));
+
+        if (data.startsWith("cancel")) {
+            log.trace("e");
+            return handleCancelButton(callbackQuery);
+        } else if(data.startsWith("day")) {
             return handleDayButton(callbackQuery);
         } else if (data.startsWith("time")) {
             return handleTimeButton(callbackQuery);
-        } else if (data.startsWith("cancel")) {
-            return handleCancelButton(callbackQuery);
         }
 
         return null;
@@ -166,7 +196,6 @@ public class MainServiceImpl implements MainService {
         int messageId = callbackQuery.getMessage().getMessageId();
         long chatId = callbackQuery.getMessage().getChatId();
         String[] callbackData = callbackQuery.getData().split("\\|");
-        log.trace("MainService: processing user's callback query: "+ Arrays.toString(callbackData));
 
         String data = callbackData[0];
         String country = callbackData[1];
@@ -174,8 +203,6 @@ public class MainServiceImpl implements MainService {
 
         Forecast forecast = weatherService.getWeatherForecast(country, city);
         String newMessage = "Choose desired time using the buttons below";
-
-        System.out.println(forecast.getDtSteps());
 
         long endOfDay = LocalDate.now()
                 .atTime(LocalTime.MAX)
@@ -242,15 +269,13 @@ public class MainServiceImpl implements MainService {
             InlineKeyboardButton button = new InlineKeyboardButton(timeString);
             button.setCallbackData(
                     "time|"
-                            .concat(String.valueOf(dayNumber))
-                            .concat("|")
-                            .concat(String.valueOf(i))
-                            .concat("|")
                             .concat(data)
                             .concat("|")
                             .concat(country)
                             .concat("|")
-                            .concat(city));
+                            .concat(city)
+                            .concat("|")
+                            .concat(String.valueOf(i)));
 
             if(i > daysSize / 2) {
                 secondRow.add(button);
@@ -261,14 +286,15 @@ public class MainServiceImpl implements MainService {
 
         InlineKeyboardButton button = new InlineKeyboardButton("Go back");
         button.setCallbackData(
-                "time|"
-                        .concat("cancel")
-                        .concat("|")
-                        .concat(data)
+                "cancel"
                         .concat("|")
                         .concat(country)
                         .concat("|")
-                        .concat(city));
+                        .concat(city)
+                        .concat("|")
+                        .concat(data)
+                        .concat("|")
+                        .concat("time"));
 
         cancelRow.add(button);
 
@@ -283,7 +309,23 @@ public class MainServiceImpl implements MainService {
         return editMessageText;
     }
 
-    private EditMessageText handleCancelButton(CallbackQuery callbackQuery) {
+    private EditMessageText handleCancelButton(CallbackQuery callbackQuery) throws IOException {
+        String[] callbackData = callbackQuery.getData().split("\\|");
+        log.debug("Processing cancel command: "+ Arrays.toString(callbackData));
+
+        callbackData[0] = callbackData[4];
+        String[] newCallbackData = new String[callbackData.length - 1];
+
+        System.arraycopy(callbackData, 0, newCallbackData, 0, newCallbackData.length);
+
+        String data = newCallbackData[0];
+
+        System.out.println(Arrays.toString(newCallbackData));
+
+        if(data.startsWith("time")) {
+            return processForecastCommand(callbackQuery, newCallbackData);
+        }
+
         return null;
     }
 

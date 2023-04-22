@@ -121,6 +121,8 @@ public class WeatherServiceImpl implements WeatherService {
         GeocodingResult geocodingResult = geocodingService.getGeocodingResult(country, city)
                 .orElse(null);
 
+        log.debug(String.format("WeatherService: getWeatherData(): country - %s city - %s", country, city));
+
         if (geocodingResult == null) {
             log.info("Could not find coords to: " + country + " " + city);
             return null;
@@ -171,6 +173,8 @@ public class WeatherServiceImpl implements WeatherService {
     }
 
     private TreeMap<Integer, Weather> getForecast(String country, String city) throws IOException {
+        log.debug(String.format("WeatherService: getWeatherData(): country - %s city - %s", country, city));
+
         TreeMap<Integer, Weather> forecast = new TreeMap<>();
         GeocodingResult geocodingResult = geocodingService.getGeocodingResult(country, city)
                 .orElse(null);
