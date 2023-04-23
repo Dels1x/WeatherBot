@@ -178,8 +178,6 @@ public class MainServiceImpl implements MainService {
 
         String data = callbackData[0];
 
-        System.out.println(callbackData[1].startsWith("cancel"));
-
         if (data.startsWith("cancel")) {
             log.trace("e");
             return handleCancelButton(callbackQuery);
@@ -204,9 +202,11 @@ public class MainServiceImpl implements MainService {
         Forecast forecast = weatherService.getWeatherForecast(country, city);
         String newMessage = "Choose desired time using the buttons below";
 
-        long endOfDay = LocalDate.now()
-                .atTime(LocalTime.MAX)
-                .toEpochSecond(ZoneOffset.UTC);
+        ZoneId zoneId = ZoneId.of("Europe/Kiev");
+        LocalDate now = LocalDate.now(zoneId);
+        LocalTime endOfDayTime = LocalTime.MAX;
+        ZonedDateTime endOfDayZoned = ZonedDateTime.of(now, endOfDayTime, zoneId);
+        long endOfDay = endOfDayZoned.toEpochSecond();
 
         List<List<Integer>> days = new ArrayList<>();
         for(int i = 0; i < 6; i++) {
@@ -220,9 +220,10 @@ public class MainServiceImpl implements MainService {
                 newMessage = "No avalaible time-stops during this day";
                 break;
             }
-            if(dtStep < endOfDay) {
+            if(dtStep < endOfDay - 1) {
                 days.get(0).add(dtStep);
                 log.trace("DtStep added to day0: "+dtStep);
+                System.out.println(endOfDay);
                 continue;
             }
 
@@ -277,7 +278,7 @@ public class MainServiceImpl implements MainService {
                             .concat("|")
                             .concat(String.valueOf(i)));
 
-            if(i > daysSize / 2) {
+            if(i > daysSize / 2 - 1) {
                 secondRow.add(button);
             } else {
                 mainRow.add(button);
@@ -319,8 +320,6 @@ public class MainServiceImpl implements MainService {
         System.arraycopy(callbackData, 0, newCallbackData, 0, newCallbackData.length);
 
         String data = newCallbackData[0];
-
-        System.out.println(Arrays.toString(newCallbackData));
 
         if(data.startsWith("time")) {
             return processForecastCommand(callbackQuery, newCallbackData);
