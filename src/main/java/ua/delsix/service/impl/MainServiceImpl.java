@@ -34,16 +34,12 @@ public class MainServiceImpl implements MainService {
     @Override
     public SendMessage processUserCommand(Update update) throws IOException {
         String userCommand = update.getMessage().getText();
-        List<String> commandList = Arrays.asList(userCommand.split(" "));
-        ServiceCommand command = ServiceCommand.fromValue(commandList.get(0));
+        String[] commandList = userCommand.split(" ");
+        ServiceCommand command = ServiceCommand.fromValue(commandList[0]);
 
-        String country = commandList.get(1);
-        StringBuilder sb = new StringBuilder();
-        for(int i = 2; i < commandList.size(); i++) {
-            sb.append(commandList.get(i).concat(" "));
-        }
-
-        String city = sb.toString().trim();
+        String[] countryAndCity = getCountryAndCity(commandList);
+        String country = countryAndCity[0];
+        String city = countryAndCity[1];
 
         if (command == null) {
             log.debug("Could not find a command to: " + userCommand);
@@ -63,7 +59,7 @@ public class MainServiceImpl implements MainService {
                                 "/sunset <country> <city> - get sunset time in mentioned place\n");
             }
             case WEATHER -> {
-                if (commandList.size() < 3) {
+                if (commandList.length < 3) {
                     return MessageUtils.sendMessageBuilder(
                             update,
                             "Usage: /weather <country> <city>");
@@ -76,7 +72,7 @@ public class MainServiceImpl implements MainService {
                 log.trace(String.format("MainServiceImpl>:%d - Processing forecast command...:\n",
                         Thread.currentThread().getStackTrace()[1].getLineNumber()));
 
-                if (commandList.size() < 3) {
+                if (commandList.length < 3) {
                     return MessageUtils.sendMessageBuilder(
                             update,
                             "Usage: /forecast <country> <city>");
@@ -85,7 +81,7 @@ public class MainServiceImpl implements MainService {
                 return processForecastCommand(update, commandList);
             }
             case SUNRISE -> {
-                if (commandList.size() < 3) {
+                if (commandList.length < 3) {
                     return MessageUtils.sendMessageBuilder(
                             update,
                             "Usage: /sunrise <country> <city>");
@@ -95,7 +91,7 @@ public class MainServiceImpl implements MainService {
                         weatherService.getSunriseTime(country, city));
             }
             case SUNSET -> {
-                if (commandList.size() < 3) {
+                if (commandList.length < 3) {
                     return MessageUtils.sendMessageBuilder(
                             update,
                             "Usage: /sunset <country> <city>");
@@ -118,7 +114,6 @@ public class MainServiceImpl implements MainService {
         String data = callbackData[0];
 
         if (data.startsWith("cancel")) {
-            log.trace("e");
             return handleCancelButton(callbackQuery);
         } else if (data.startsWith("day")) {
             return handleDayButton(callbackQuery);
@@ -129,15 +124,10 @@ public class MainServiceImpl implements MainService {
         return null;
     }
 
-    private SendMessage processForecastCommand(Update update, List<String> commandList) throws IOException {
-        String country = commandList.get(1);
-        StringBuilder sb = new StringBuilder();
-        for(int i = 2; i < commandList.size(); i++) {
-            sb.append(commandList.get(i).concat(" "));
-        }
-
-        String city = sb.toString().trim();
-
+    private SendMessage processForecastCommand(Update update, String[] commandList) throws IOException {
+        String[] countryAndCity = getCountryAndCity(commandList);
+        String country = countryAndCity[0];
+        String city = countryAndCity[1];
 
         Forecast forecast = weatherService.getWeatherForecast(country, city);
 
@@ -218,8 +208,9 @@ public class MainServiceImpl implements MainService {
         log.info("handleDayButton callbackQuery: " + Arrays.toString(callbackData));
 
         String data = callbackData[0];
-        String country = callbackData[1];
-        String city = callbackData[2];
+        String[] countryAndCity = getCountryAndCity(callbackData);
+        String country = countryAndCity[0];
+        String city = countryAndCity[1];
 
         Forecast forecast = weatherService.getWeatherForecast(country, city);
         String newMessage = "Choose desired time using the buttons below";
@@ -230,6 +221,8 @@ public class MainServiceImpl implements MainService {
         ZonedDateTime endOfDayZoned = ZonedDateTime.of(now, endOfDayTime, zoneId);
         long endOfDay = endOfDayZoned.toEpochSecond();
 
+        System.out.println(Arrays.toString(forecast.getDtSteps()));
+
         List<List<Integer>> days = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
             days.add(new ArrayList<>());
@@ -237,11 +230,10 @@ public class MainServiceImpl implements MainService {
 
         byte counterA = 1, counterB = 0;
 
+        if (forecast.getDtSteps()[0] > endOfDay) {
+            newMessage = "No avalaible time-stops during this day";
+        }
         for (Integer dtStep : forecast.getDtSteps()) {
-            if (forecast.getDtSteps()[0] > endOfDay) {
-                newMessage = "No avalaible time-stops during this day";
-                break;
-            }
             if (dtStep < endOfDay - 1) {
                 days.get(0).add(dtStep);
                 log.trace("DtStep added to day0: " + dtStep);
@@ -255,15 +247,6 @@ public class MainServiceImpl implements MainService {
 
             days.get(counterA).add(dtStep);
             counterB++;
-
-            log.trace(String.format(
-                    "dtStep - %d " +
-                            "counterA - %d " +
-                            "counterB - %d\n",
-                    dtStep,
-                    counterA,
-                    counterB
-            ));
         }
 
         log.trace("Days list: " + days);
@@ -293,9 +276,9 @@ public class MainServiceImpl implements MainService {
                             .concat("|")
                             .concat(city)
                             .concat("|")
-                            .concat(String.valueOf(Integer.parseInt(data.substring(data.length() - 1)) - 1))
+                            .concat(String.valueOf(Integer.parseInt(data.substring(data.length() - 1)))
                             .concat("|")
-                            .concat(String.valueOf(i)));
+                            .concat(String.valueOf(i))));
 
             if (i > daysSize / 2 - 1) {
                 secondRow.add(button);
@@ -344,8 +327,7 @@ public class MainServiceImpl implements MainService {
 
         ZoneId zoneId = ZoneId.of("Europe/Kyiv");
         LocalDate now = LocalDate.now(zoneId);
-        LocalTime endOfDayTime = LocalTime.MAX;
-        ZonedDateTime endOfDayZoned = ZonedDateTime.of(now, endOfDayTime, zoneId);
+        ZonedDateTime endOfDayZoned = ZonedDateTime.of(now, LocalTime.MAX, zoneId);
         long endOfDay = endOfDayZoned.toEpochSecond();
 
         List<List<Integer>> days = new ArrayList<>();
@@ -469,6 +451,7 @@ public class MainServiceImpl implements MainService {
     }
 
     private EditMessageText handleTimeButton(CallbackQuery callbackQuery) throws IOException {
+        log.debug("Processing time button request");
         int messageId = callbackQuery.getMessage().getMessageId();
         long chatId = callbackQuery.getMessage().getChatId();
         String[] callbackData = callbackQuery.getData().split("\\|");
@@ -483,8 +466,7 @@ public class MainServiceImpl implements MainService {
 
         ZoneId zoneId = ZoneId.of("Europe/Kyiv");
         LocalDate now = LocalDate.now(zoneId);
-        LocalTime endOfDayTime = LocalTime.MAX;
-        ZonedDateTime endOfDayZoned = ZonedDateTime.of(now, endOfDayTime, zoneId);
+        ZonedDateTime endOfDayZoned = ZonedDateTime.of(now, LocalTime.MAX, zoneId);
         long endOfDay = endOfDayZoned.toEpochSecond();
 
         List<List<Integer>> days = new ArrayList<>();
@@ -525,7 +507,7 @@ public class MainServiceImpl implements MainService {
 
         log.trace("Days list: " + days);
 
-        Integer selectedTimeUnix = days.get(dayNumber+1).get(timeNumber);
+        Integer selectedTimeUnix = days.get(dayNumber + 1).get(timeNumber);
         Weather weather = forecast.getForecast().get(selectedTimeUnix);
 
         log.trace("Weather: " + weather);
@@ -573,6 +555,22 @@ public class MainServiceImpl implements MainService {
         inlineKeyboardMarkup.setKeyboard(keyboard);
         editMessageText.setReplyMarkup(inlineKeyboardMarkup);
         return editMessageText;
+    }
+
+    private String[] getCountryAndCity(String[] commandList) {
+        String country = commandList[1];
+        StringBuilder sb = new StringBuilder();
+        String currentString;
+        for (int i = 2; i < commandList.length; i++) {
+            currentString = commandList[i];
+            if(currentString.matches("^[a-zA-Z]*$")) {
+                sb.append(currentString.concat(" "));
+            }
+        }
+
+        String city = sb.toString().trim();
+
+        return new String[]{country, city};
     }
 
 }
