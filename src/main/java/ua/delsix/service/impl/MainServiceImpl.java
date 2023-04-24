@@ -52,11 +52,14 @@ public class MainServiceImpl implements MainService {
             case HELP -> {
                 return MessageUtils.sendMessageBuilder(
                         update,
-                        "Available commands:\n\n" +
-                                "/weather <country> <city> - get current weather in mentioned place\n" +
-                                "/forecast <country> <city> - get weather forecast in mentioned place\n" +
-                                "/sunrise <country> <city> - get sunrise time in mentioned place\n" +
-                                "/sunset <country> <city> - get sunset time in mentioned place\n");
+                        """
+                                Available commands:
+
+                                /weather <country> <city> - get current weather in mentioned place
+                                /forecast <country> <city> - get weather forecast in mentioned place
+                                /sunrise <country> <city> - get sunrise time in mentioned place
+                                /sunset <country> <city> - get sunset time in mentioned place
+                                """);
             }
             case WEATHER -> {
                 if (commandList.length < 3) {
@@ -116,7 +119,7 @@ public class MainServiceImpl implements MainService {
         if (data.startsWith("cancel")) {
             return handleCancelButton(callbackQuery);
         } else if (data.startsWith("day")) {
-            return handleDayButton(callbackQuery);
+            return handleDayButton(callbackQuery, callbackData);
         } else if (data.startsWith("time")) {
             return handleTimeButton(callbackQuery);
         }
@@ -200,21 +203,6 @@ public class MainServiceImpl implements MainService {
         return markup;
     }
 
-    private EditMessageText handleDayButton(CallbackQuery callbackQuery) throws IOException {
-        String[] callbackData = callbackQuery.getData().split("\\|");
-
-        log.info("handleDayButton callbackQuery: " + Arrays.toString(callbackData));
-
-        String[] countryAndCity = getCountryAndCity(callbackData);
-        String country = countryAndCity[0];
-        String city = countryAndCity[1];
-
-        Forecast forecast = weatherService.getWeatherForecast(country, city);
-        String newMessage = "Choose desired time using the buttons below";
-
-        return buildEditMessageText(callbackQuery, callbackData, forecast, newMessage);
-    }
-
     private EditMessageText handleDayButton(CallbackQuery callbackQuery, String[] newCallbackData) throws IOException {
         log.debug("handleDayButton callbackQuery: " + Arrays.toString(newCallbackData));
 
@@ -266,8 +254,8 @@ public class MainServiceImpl implements MainService {
         ZonedDateTime endOfDayZoned = ZonedDateTime.of(now, LocalTime.MAX, zoneId);
         long endOfDay = endOfDayZoned.toEpochSecond();
 
-        if (forecast.getDtSteps()[0] > endOfDay) {
-            handleDayButton(callbackQuery);
+        if (dayNumber == 0 && forecast.getDtSteps()[0] > endOfDay) {
+            handleDayButton(callbackQuery, callbackData);
         }
 
         List<List<Integer>> days = getDays(forecast);
@@ -301,11 +289,13 @@ public class MainServiceImpl implements MainService {
         String timeString = formatter.format(instant);
 
         String newMessage = String.format(
-                "Weather in: %s, %s at %s\n\n" +
-                        "Weather: %s: %s\n" +
-                        "Temperature: %.2f (feels like %.2f)\n" +
-                        "Wind: %.2fm/s\n" +
-                        "Humidity: %d",
+                """
+                        Weather in: %s, %s at %s
+
+                        Weather: %s: %s
+                        Temperature: %.2f (feels like %.2f)
+                        Wind: %.2fm/s
+                        Humidity: %d""",
                 weather.getGeocodingResult().getCountryCode(), weather.getGeocodingResult().getEnCityName(), timeString,
                 weather.getWeatherName(), weather.getWeatherDesc(),
                 weather.getRealTemp(), weather.getFeelsLikeTemp(),
@@ -425,12 +415,14 @@ public class MainServiceImpl implements MainService {
     }
 
     private EditMessageText buildEditMessageText(CallbackQuery callbackQuery, String[] callbackData, Forecast forecast, String message) {
+        log.debug("CallbackData: "+ Arrays.toString(callbackData));
         String data = callbackData[0];
         String country = callbackData[1];
         String city = callbackData[2];
+        int dayNumber = data.charAt(data.length() - 1) - '0'; // gets the last number of data variable aka day number
         long endOfDay = getEndOfDay();
 
-        if (forecast.getDtSteps()[0] > endOfDay) {
+        if (dayNumber == 0 && forecast.getDtSteps()[0] > endOfDay) {
             return handleNoTimeStops(callbackQuery, forecast, callbackData);
         }
 
@@ -442,7 +434,6 @@ public class MainServiceImpl implements MainService {
         keyboard.add(mainRow);
         keyboard.add(secondRow);
 
-        int dayNumber = data.charAt(data.length() - 1) - '0'; // gets the last number of data variable
         List<Integer> theDay = days.get(dayNumber);
         int daysSize = theDay.size();
         for (int i = 0; i < daysSize; i++) {
