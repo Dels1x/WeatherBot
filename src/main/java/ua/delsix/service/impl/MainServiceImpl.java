@@ -215,42 +215,13 @@ public class MainServiceImpl implements MainService {
         Forecast forecast = weatherService.getWeatherForecast(country, city);
         String newMessage = "Choose desired time using the buttons below";
 
-        ZoneId zoneId = ZoneId.of("Europe/Kyiv");
-        LocalDate now = LocalDate.now(zoneId);
-        LocalTime endOfDayTime = LocalTime.MAX;
-        ZonedDateTime endOfDayZoned = ZonedDateTime.of(now, endOfDayTime, zoneId);
-        long endOfDay = endOfDayZoned.toEpochSecond();
-
-        System.out.println(Arrays.toString(forecast.getDtSteps()));
-
-        List<List<Integer>> days = new ArrayList<>();
-        for (int i = 0; i < 6; i++) {
-            days.add(new ArrayList<>());
-        }
-
-        byte counterA = 1, counterB = 0;
+        long endOfDay = getEndOfDay();
 
         if (forecast.getDtSteps()[0] > endOfDay) {
-            newMessage = "No avalaible time-stops during this day";
-        }
-        for (Integer dtStep : forecast.getDtSteps()) {
-            if (dtStep < endOfDay - 1) {
-                days.get(0).add(dtStep);
-                log.trace("DtStep added to day0: " + dtStep);
-                continue;
-            }
-
-            if (counterB == 8) {
-                counterA++;
-                counterB = 0;
-            }
-
-            days.get(counterA).add(dtStep);
-            counterB++;
+            return handleNoTimeStops(callbackQuery, forecast, callbackData);
         }
 
-        log.trace("Days list: " + days);
-
+        List<List<Integer>> days = getDays(forecast);
 
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         List<InlineKeyboardButton> mainRow = new ArrayList<>();
@@ -266,7 +237,7 @@ public class MainServiceImpl implements MainService {
         for (int i = 0; i < daysSize; i++) {
             Instant instant = Instant.ofEpochSecond(theDay.get(i));
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm")
-                    .withZone(zoneId);
+                    .withZone(ZoneId.of("Europe/Kyiv"));
             String timeString = formatter.format(instant);
 
             InlineKeyboardButton button = new InlineKeyboardButton(timeString);
@@ -325,50 +296,13 @@ public class MainServiceImpl implements MainService {
         Forecast forecast = weatherService.getWeatherForecast(country, city);
         String newMessage = "Choose desired time using the buttons below";
 
-        ZoneId zoneId = ZoneId.of("Europe/Kyiv");
-        LocalDate now = LocalDate.now(zoneId);
-        ZonedDateTime endOfDayZoned = ZonedDateTime.of(now, LocalTime.MAX, zoneId);
-        long endOfDay = endOfDayZoned.toEpochSecond();
+        long endOfDay = getEndOfDay();
 
-        List<List<Integer>> days = new ArrayList<>();
-        for (int i = 0; i < 6; i++) {
-            days.add(new ArrayList<>());
+        if (forecast.getDtSteps()[0] > endOfDay) {
+            return handleNoTimeStops(callbackQuery, forecast, newCallbackData);
         }
 
-        byte counterA = 1, counterB = 0;
-
-        for (Integer dtStep : forecast.getDtSteps()) {
-            if (forecast.getDtSteps()[0] > endOfDay) {
-                newMessage = "No avalaible time-stops during this day";
-                break;
-            }
-            if (dtStep < endOfDay) {
-                days.get(0).add(dtStep);
-                log.trace("DtStep added to day0: " + dtStep);
-                System.out.println(endOfDay);
-                continue;
-            }
-
-            if (counterB == 8) {
-                counterA++;
-                counterB = 0;
-            }
-
-            days.get(counterA).add(dtStep);
-            counterB++;
-
-            log.trace(String.format(
-                    "dtStep - %d " +
-                            "counterA - %d " +
-                            "counterB - %d\n",
-                    dtStep,
-                    counterA,
-                    counterB
-            ));
-        }
-
-        log.trace("Days list: " + days);
-
+        List<List<Integer>> days = getDays(forecast);
 
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
         List<InlineKeyboardButton> mainRow = new ArrayList<>();
@@ -384,7 +318,7 @@ public class MainServiceImpl implements MainService {
         for (int i = 0; i < daysSize; i++) {
             Instant instant = Instant.ofEpochSecond(theDay.get(i));
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm")
-                    .withZone(zoneId);
+                    .withZone(ZoneId.of("Europe/Kyiv"));
             String timeString = formatter.format(instant);
 
             InlineKeyboardButton button = new InlineKeyboardButton(timeString);
@@ -469,6 +403,10 @@ public class MainServiceImpl implements MainService {
         ZonedDateTime endOfDayZoned = ZonedDateTime.of(now, LocalTime.MAX, zoneId);
         long endOfDay = endOfDayZoned.toEpochSecond();
 
+        if (forecast.getDtSteps()[0] > endOfDay) {
+            handleDayButton(callbackQuery);
+        }
+
         List<List<Integer>> days = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
             days.add(new ArrayList<>());
@@ -477,9 +415,6 @@ public class MainServiceImpl implements MainService {
         byte counterA = 1, counterB = 0;
 
         for (Integer dtStep : forecast.getDtSteps()) {
-            if (forecast.getDtSteps()[0] > endOfDay) {
-                handleDayButton(callbackQuery);
-            }
             if (dtStep < endOfDay) {
                 days.get(0).add(dtStep);
                 log.trace("DtStep added to day0: " + dtStep);
@@ -573,4 +508,86 @@ public class MainServiceImpl implements MainService {
         return new String[]{country, city};
     }
 
+    private EditMessageText handleNoTimeStops(CallbackQuery callbackQuery, Forecast forecast, String[] callbackData) {
+        String data = callbackData[0];
+        String country = callbackData[1];
+        String city = callbackData[2];
+
+        String newMessage = "No avalaible time-stops during this day";
+
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        List<InlineKeyboardButton> cancelRow = new ArrayList<>();
+        keyboard.add(cancelRow);
+
+        InlineKeyboardButton button = new InlineKeyboardButton("Go back");
+        button.setCallbackData(
+                "cancel"
+                        .concat("|")
+                        .concat(country)
+                        .concat("|")
+                        .concat(city)
+                        .concat("|")
+                        .concat(data)
+                        .concat("|")
+                        .concat("day"));
+
+        cancelRow.add(button);
+
+        EditMessageText editMessageText = new EditMessageText();
+        editMessageText.setChatId(callbackQuery.getMessage().getChatId());
+        editMessageText.setMessageId(callbackQuery.getMessage().getMessageId());
+        editMessageText.setText(forecast.getMessage()
+                .concat(newMessage));
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        inlineKeyboardMarkup.setKeyboard(keyboard);
+        editMessageText.setReplyMarkup(inlineKeyboardMarkup);
+        return editMessageText;
+    }
+
+    private long getEndOfDay() {
+        ZoneId zoneId = ZoneId.of("Europe/Kyiv");
+        LocalDate now = LocalDate.now(zoneId);
+        ZonedDateTime endOfDayZoned = ZonedDateTime.of(now, LocalTime.MAX, zoneId);
+        return endOfDayZoned.toEpochSecond();
+    }
+
+    private List<List<Integer>> getDays(Forecast forecast) {
+        long endOfDay = getEndOfDay();
+        List<List<Integer>> days = new ArrayList<>();
+
+        for (int i = 0; i < 6; i++) {
+            days.add(new ArrayList<>());
+        }
+
+        byte counterA = 1, counterB = 0;
+
+        for (Integer dtStep : forecast.getDtSteps()) {
+            if (dtStep < endOfDay) {
+                days.get(0).add(dtStep);
+                log.trace("DtStep added to day0: " + dtStep);
+                continue;
+            }
+
+            if (counterB == 8) {
+                counterA++;
+                counterB = 0;
+            }
+
+            days.get(counterA).add(dtStep);
+            counterB++;
+
+            log.trace(String.format(
+                    "dtStep - %d " +
+                            "counterA - %d " +
+                            "counterB - %d\n",
+                    dtStep,
+                    counterA,
+                    counterB
+            ));
+        }
+
+        log.trace("Days list: " + days);
+
+        return days;
+    }
 }
