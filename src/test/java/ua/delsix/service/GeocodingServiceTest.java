@@ -44,7 +44,6 @@ class GeocodingServiceTest {
         );
 
         Optional<GeocodingResult> geocodingResult = geocodingService.getGeocodingResult("USA", "Dallas");
-        System.out.println(geocodingResult);
 
         assertEquals(expectedResult, geocodingResult.get());
     }
@@ -60,7 +59,6 @@ class GeocodingServiceTest {
         );
 
         Optional<GeocodingResult> geocodingResult = geocodingService.getGeocodingResult("Netherlands", "Amsterdam");
-        System.out.println(geocodingResult);
 
         assertEquals(expectedResult, geocodingResult.get());
     }

@@ -21,14 +21,9 @@ class WeatherServiceTest {
         String output = weatherService.getWeather("Ukraine", "Odesa");
 
         System.out.println(output);
+
     }
 
-    @Test
-    void getForecastOdesa() throws IOException {
-        String output = weatherService.getWeatherForecast("Ukraine", "Odesa");
-
-        System.out.println(output);
-    }
 
     @Test
     void getSunriseTimeOdesa() throws IOException {

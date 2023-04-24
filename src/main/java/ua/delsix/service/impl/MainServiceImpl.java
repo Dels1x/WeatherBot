@@ -418,7 +418,6 @@ public class MainServiceImpl implements MainService {
             if (dtStep < endOfDay) {
                 days.get(0).add(dtStep);
                 log.trace("DtStep added to day0: " + dtStep);
-                System.out.println(endOfDay);
                 continue;
             }
 

@@ -35,7 +35,6 @@ public class GeocodingServiceImpl implements GeocodingService {
             return null;
         }
 
-        System.out.println(apiKey);
         log.trace(String.format(
                 "GeocodingServiceImpl:%d - API call: %s?q=%s,%s&limit=%d&appid=%s",
                 Thread.currentThread().getStackTrace()[1].getLineNumber(),
