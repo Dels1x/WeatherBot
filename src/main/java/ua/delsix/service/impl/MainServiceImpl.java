@@ -407,39 +407,7 @@ public class MainServiceImpl implements MainService {
             handleDayButton(callbackQuery);
         }
 
-        List<List<Integer>> days = new ArrayList<>();
-        for (int i = 0; i < 6; i++) {
-            days.add(new ArrayList<>());
-        }
-
-        byte counterA = 1, counterB = 0;
-
-        for (Integer dtStep : forecast.getDtSteps()) {
-            if (dtStep < endOfDay) {
-                days.get(0).add(dtStep);
-                log.trace("DtStep added to day0: " + dtStep);
-                continue;
-            }
-
-            if (counterB == 8) {
-                counterA++;
-                counterB = 0;
-            }
-
-            days.get(counterA).add(dtStep);
-            counterB++;
-
-            log.trace(String.format(
-                    "dtStep - %d " +
-                            "counterA - %d " +
-                            "counterB - %d\n",
-                    dtStep,
-                    counterA,
-                    counterB
-            ));
-        }
-
-        log.trace("Days list: " + days);
+        List<List<Integer>> days = getDays(forecast);
 
         Integer selectedTimeUnix = days.get(dayNumber + 1).get(timeNumber);
         Weather weather = forecast.getForecast().get(selectedTimeUnix);
