@@ -10,7 +10,6 @@ import ua.delsix.service.GeocodingService;
 import ua.delsix.service.units.GeocodingResult;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +31,7 @@ public class GeocodingServiceImpl implements GeocodingService {
         GeocodingResult geocodingResult = new GeocodingResult();
         String countryCode = getCountryCode(country);
         if (countryCode == null) {
-            return null;
+            return Optional.empty();
         }
 
         log.trace(String.format(
@@ -45,13 +44,13 @@ public class GeocodingServiceImpl implements GeocodingService {
                 apiKey));
 
         Request request = new Request.Builder()
-                        .url(String.format("%s?q=%s,%s&limit=%d&appid=%s",
-                                BASE_URL,
-                                city,
-                                countryCode,
-                                5,
-                                apiKey))
-                        .build();
+                .url(String.format("%s?q=%s,%s&limit=%d&appid=%s",
+                        BASE_URL,
+                        city,
+                        countryCode,
+                        5,
+                        apiKey))
+                .build();
 
 
         Call call = client.newCall(request);
@@ -62,47 +61,44 @@ public class GeocodingServiceImpl implements GeocodingService {
                 String responseBody = response.body().string();
                 JSONArray jsonArray = new JSONArray(responseBody);
 
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject jsonObject = jsonArray.getJSONObject(i);
-                    JSONObject localNames = jsonObject.getJSONObject("local_names");
+                JSONObject jsonObject = jsonArray.getJSONObject(0);
+                JSONObject localNames = jsonObject.getJSONObject("local_names");
 
-                    geocodingResult.setLat(jsonObject.getDouble("lat"));
-                    geocodingResult.setLon(jsonObject.getDouble("lon"));
-                    geocodingResult.setCountryCode(jsonObject.getString("country"));
-                    geocodingResult.setEnCityName(localNames.getString("en"));
-                    geocodingResult.setRuCityName(localNames.getString("ru"));
+                geocodingResult.setLat(jsonObject.getDouble("lat"));
+                geocodingResult.setLon(jsonObject.getDouble("lon"));
+                geocodingResult.setCountryCode(jsonObject.getString("country"));
+                geocodingResult.setEnCityName(localNames.getString("en"));
+                geocodingResult.setRuCityName(localNames.getString("ru"));
 
-                    return Optional.of(geocodingResult);
-                }
+                return Optional.of(geocodingResult);
             } else {
                 log.error(String.format("GeocodingServiceImpl:%d - Response code: %d",
                         Thread.currentThread().getStackTrace()[1].getLineNumber(),
                         response.code()));
             }
         } catch (Exception e) {
-            log.error("Response error: "+e);
+            log.error("Response error: " + e);
         }
 
         return Optional.empty();
     }
 
-    @Override
-    public List<GeocodingResult> getGeocodingResult(String city) {
-        GeocodingResult geocodingResult = new GeocodingResult();
-        return null;
-    }
-
     private String getCountryCode(String countryName) {
-        if(countryName.equals("USA")) return "US";
+        if (countryName.equals("USA")) return "US";
+        if (countryName.equals("UK")) return "GB";
+
+        if (Arrays.asList(Locale.getISOCountries()).contains(countryName)) {
+            return countryName;
+        }
 
         for (String iso : Locale.getISOCountries()) {
             Locale l = new Locale("", iso);
-            if(l.getDisplayCountry().equalsIgnoreCase(countryName)) {
+            if (l.getDisplayCountry().equalsIgnoreCase(countryName)) {
                 return iso;
             }
         }
 
-        log.trace("Locale.getISOCountries(): "+ Arrays.toString(Locale.getISOCountries()));
+        log.trace("Locale.getISOCountries(): " + Arrays.toString(Locale.getISOCountries()));
         return null;
     }
 }

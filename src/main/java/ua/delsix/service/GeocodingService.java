@@ -7,8 +7,4 @@ import java.util.Optional;
 
 public interface GeocodingService {
     Optional<GeocodingResult> getGeocodingResult(String county, String city);
-
-    List<GeocodingResult> getGeocodingResult(String city);
-
-
 }

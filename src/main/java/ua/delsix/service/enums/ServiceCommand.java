@@ -1,8 +1,7 @@
 package ua.delsix.service.enums;
 
-import java.util.Objects;
-
 public enum ServiceCommand {
+    START("/start"),
     HELP("/help"),
     WEATHER("/weather", 2),
     FORECAST("/forecast", 2),

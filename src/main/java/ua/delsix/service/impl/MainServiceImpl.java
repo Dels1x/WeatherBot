@@ -34,12 +34,23 @@ public class MainServiceImpl implements MainService {
     @Override
     public SendMessage processUserCommand(Update update) throws IOException {
         String userCommand = update.getMessage().getText();
+        if (userCommand.contains("Great Britain")) {
+            userCommand = userCommand.replace("Great Britain", "GB");
+        } else if (userCommand.contains("United Kingdom")) {
+            userCommand = userCommand.replace("United Kingdom", "GB");
+        }
+
         String[] commandList = userCommand.split(" ");
+        String country = "";
+        String city = "";
+
         ServiceCommand command = ServiceCommand.fromValue(commandList[0]);
 
-        String[] countryAndCity = getCountryAndCity(commandList);
-        String country = countryAndCity[0];
-        String city = countryAndCity[1];
+        if(commandList.length >= 3) {
+            String[] countryAndCity = getCountryAndCity(commandList);
+            country = countryAndCity[0];
+            city = countryAndCity[1];
+        }
 
         if (command == null) {
             log.debug("Could not find a command to: " + userCommand);
@@ -49,6 +60,17 @@ public class MainServiceImpl implements MainService {
         }
 
         switch (command) {
+            case START -> {
+                return MessageUtils.sendMessageBuilder(
+                        update,
+                        """
+                                Welcome to the Weather Bot!
+                                
+                                To learn about the functionality of this bot, simply type in "/help" or use built-in\
+                                 telegram menu in the bottom-left corner.
+                                """
+                );
+            }
             case HELP -> {
                 return MessageUtils.sendMessageBuilder(
                         update,
