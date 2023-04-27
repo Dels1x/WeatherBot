@@ -36,15 +36,20 @@ public class WeatherServiceImpl implements WeatherService {
     @Override
     public String getWeather(String country, String city) throws IOException {
         Weather weather = getWeatherData(country, city);
-        assert weather != null;
+        if(weather == null) {
+            return String.format("Could not find any place with a name of: %s, %s", country, city);
+        }
+
         GeocodingResult geocodingResult = weather.getGeocodingResult();
 
         String output = String.format(
-                "Weather in: %s, %s\n\n" +
-                "Weather: %s: %s\n" +
-                "Temperature: %.2f (feels like %.2f)\n" +
-                "Wind: %.2fm/s\n" +
-                "Humidity: %d",
+                """
+                        Weather in: %s, %s
+
+                        Weather: %s: %s
+                        Temperature: %.2f (feels like %.2f)
+                        Wind: %.2fm/s
+                        Humidity: %d""",
                 geocodingResult.getCountryCode(), geocodingResult.getEnCityName(),
                 weather.getWeatherName(), weather.getWeatherDesc(),
                 weather.getRealTemp(), weather.getFeelsLikeTemp(),
@@ -237,22 +242,5 @@ public class WeatherServiceImpl implements WeatherService {
         weather.setGeocodingResult(geocodingResult);
 
         return weather;
-    }
-
-    private String convertUnixTimeToDateTime(int unixTime) {
-        Instant instant = Instant.ofEpochSecond(unixTime);
-        LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd' 'MMMM HH:mm");
-        return dateTime.format(formatter);
-    }
-
-    private String getPaddingString(String str, int columnWidth) {
-        if(str.length() > columnWidth) {
-            return str.substring(0, columnWidth);
-        }
-
-        int spacesNum = columnWidth -str.length();
-
-        return str + " ".repeat(spacesNum);
     }
 }

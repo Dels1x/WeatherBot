@@ -60,8 +60,13 @@ public class GeocodingServiceImpl implements GeocodingService {
                 assert response.body() != null;
                 String responseBody = response.body().string();
                 JSONArray jsonArray = new JSONArray(responseBody);
+                JSONObject jsonObject;
 
-                JSONObject jsonObject = jsonArray.getJSONObject(0);
+                if(jsonArray.length() > 1 ){
+                    jsonObject = jsonArray.getJSONObject(1);
+                } else {
+                    jsonObject = jsonArray.getJSONObject(0);
+                }
                 JSONObject localNames = jsonObject.getJSONObject("local_names");
 
                 geocodingResult.setLat(jsonObject.getDouble("lat"));
