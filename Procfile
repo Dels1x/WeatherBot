@@ -1,1 +1,1 @@
-web: java -jar target/WeatherBot-1.0-SNAPSHOT.jar
+web: java -jar out/artifacts/WeatherBot_jar/WeatherBot.jar
