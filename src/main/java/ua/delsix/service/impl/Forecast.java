@@ -7,7 +7,6 @@ import lombok.Setter;
 import lombok.ToString;
 import ua.delsix.service.units.Weather;
 
-import java.util.Set;
 import java.util.TreeMap;
 
 @Getter
