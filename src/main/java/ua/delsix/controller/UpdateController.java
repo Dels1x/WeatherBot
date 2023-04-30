@@ -1,6 +1,7 @@
 package ua.delsix.controller;
 
 import lombok.extern.log4j.Log4j;
+import org.json.JSONException;
 import org.springframework.stereotype.Controller;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import ua.delsix.service.MainService;
@@ -21,7 +22,7 @@ public class UpdateController {
         this.myTelegramBot = myTelegramBot;
     }
 
-    public void processUpdate(Update update) throws IOException {
+    public void processUpdate(Update update) throws IOException, JSONException {
         if(update.hasCallbackQuery()) {
             myTelegramBot.editAnswerMessage(mainService.processForecastCallbackQuery(update.getCallbackQuery()));
         } else if (update.getMessage().hasText()) {

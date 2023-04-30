@@ -1,6 +1,7 @@
 package ua.delsix.service.impl;
 
 import lombok.extern.log4j.Log4j;
+import org.json.JSONException;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -32,7 +33,7 @@ public class MainServiceImpl implements MainService {
     }
 
     @Override
-    public SendMessage processUserCommand(Update update) throws IOException {
+    public SendMessage processUserCommand(Update update) throws IOException, JSONException {
         String userCommand = update.getMessage().getText();
         if (userCommand.contains("Great Britain")) {
             userCommand = userCommand.replace("Great Britain", "GB");
@@ -132,7 +133,7 @@ public class MainServiceImpl implements MainService {
     }
 
     @Override
-    public EditMessageText processForecastCallbackQuery(CallbackQuery callbackQuery) throws IOException {
+    public EditMessageText processForecastCallbackQuery(CallbackQuery callbackQuery) throws IOException, JSONException {
         String[] callbackData = callbackQuery.getData().split("\\|");
         log.trace("MainService: processing user's callback query: " + Arrays.toString(callbackData));
 
@@ -149,12 +150,13 @@ public class MainServiceImpl implements MainService {
         return null;
     }
 
-    private SendMessage processForecastCommand(Update update, String[] commandList) throws IOException {
+    private SendMessage processForecastCommand(Update update, String[] commandList) throws IOException, JSONException {
         String[] countryAndCity = getCountryAndCity(commandList);
         String country = countryAndCity[0];
         String city = countryAndCity[1];
 
-        Forecast forecast = weatherService.getWeatherForecast(country, city);
+        Forecast forecast = weatherService.
+                getWeatherForecast(country, city);
 
         SendMessage sendMessage = MessageUtils.sendMessageBuilder(
                 update,
@@ -166,7 +168,7 @@ public class MainServiceImpl implements MainService {
         return sendMessage;
     }
 
-    private EditMessageText processForecastCommand(CallbackQuery callbackQuery, String[] callbackData) throws IOException {
+    private EditMessageText processForecastCommand(CallbackQuery callbackQuery, String[] callbackData) throws IOException, JSONException {
         String country = callbackData[1];
         String city = callbackData[2];
 
@@ -225,7 +227,7 @@ public class MainServiceImpl implements MainService {
         return markup;
     }
 
-    private EditMessageText handleDayButton(CallbackQuery callbackQuery, String[] newCallbackData) throws IOException {
+    private EditMessageText handleDayButton(CallbackQuery callbackQuery, String[] newCallbackData) throws IOException, JSONException {
         log.debug("handleDayButton callbackQuery: " + Arrays.toString(newCallbackData));
 
         String country = newCallbackData[1];
@@ -237,7 +239,7 @@ public class MainServiceImpl implements MainService {
         return buildEditMessageText(callbackQuery, newCallbackData, forecast, newMessage);
     }
 
-    private EditMessageText handleCancelButton(CallbackQuery callbackQuery) throws IOException {
+    private EditMessageText handleCancelButton(CallbackQuery callbackQuery) throws IOException, JSONException {
         String[] callbackData = callbackQuery.getData().split("\\|");
         log.debug("Processing cancel command: " + Arrays.toString(callbackData));
 
@@ -257,7 +259,7 @@ public class MainServiceImpl implements MainService {
         return null;
     }
 
-    private EditMessageText handleTimeButton(CallbackQuery callbackQuery) throws IOException {
+    private EditMessageText handleTimeButton(CallbackQuery callbackQuery) throws IOException, JSONException {
         log.debug("Processing time button request");
         int messageId = callbackQuery.getMessage().getMessageId();
         long chatId = callbackQuery.getMessage().getChatId();

@@ -1,5 +1,7 @@
 package ua.delsix.controller;
 import lombok.extern.log4j.Log4j;
+import org.json.JSONException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -17,22 +19,18 @@ import java.io.IOException;
 public class MyTelegramBot extends TelegramLongPollingBot {
     @Value("${bot.name}")
     private String botName;
-    @Value("${bot.token}")
-    private String botToken;
     private final UpdateController updateController;
 
-    public MyTelegramBot(UpdateController updateController) {
+    @Autowired
+    public MyTelegramBot(@Value("${bot.token}") String token,
+                         UpdateController updateController) {
+        super(token);
         this.updateController = updateController;
     }
 
     @PostConstruct
     public void registrateBotInUpdateController() {
         updateController.registrateBot(this);
-    }
-
-    @PostConstruct
-    private void setCallbackQueryHandler() {
-
     }
 
     @Override
@@ -45,7 +43,7 @@ public class MyTelegramBot extends TelegramLongPollingBot {
         log.debug("Update received: "+update);
         try {
             updateController.processUpdate(update);
-        } catch (IOException e) {
+        } catch (IOException | JSONException e) {
             throw new RuntimeException(e);
         }
     }
@@ -68,10 +66,5 @@ public class MyTelegramBot extends TelegramLongPollingBot {
                 log.error(e);
             }
         }
-    }
-
-    @Override
-    public String getBotToken() {
-        return botToken;
     }
 }

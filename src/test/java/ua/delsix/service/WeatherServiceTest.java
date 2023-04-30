@@ -1,5 +1,6 @@
 package ua.delsix.service;
 
+import org.json.JSONException;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,7 @@ class WeatherServiceTest {
     private WeatherService weatherService;
 
     @Test
-    void getCurrentWeatherOdesa() throws IOException {
+    void getCurrentWeatherOdesa() throws IOException, JSONException {
         String output = weatherService.getWeather("Ukraine", "Odesa");
 
         System.out.println(output);
@@ -26,14 +27,14 @@ class WeatherServiceTest {
 
 
     @Test
-    void getSunriseTimeOdesa() throws IOException {
+    void getSunriseTimeOdesa() throws IOException, JSONException {
         String output = weatherService.getSunriseTime("Ukraine", "Odesa");
 
         System.out.println(output);
     }
 
     @Test
-    void getSunsetTimeOdesa() throws IOException {
+    void getSunsetTimeOdesa() throws IOException, JSONException {
         String output = weatherService.getSunsetTime("Ukraine", "Odesa");
 
         System.out.println(output);

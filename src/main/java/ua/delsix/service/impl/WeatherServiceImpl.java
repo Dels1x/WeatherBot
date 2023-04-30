@@ -3,6 +3,7 @@ package ua.delsix.service.impl;
 import lombok.extern.log4j.Log4j;
 import okhttp3.*;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,7 @@ public class WeatherServiceImpl implements WeatherService {
     }
 
     @Override
-    public String getWeather(String country, String city) throws IOException {
+    public String getWeather(String country, String city) throws IOException, JSONException {
         Weather weather = getWeatherData(country, city);
         if(weather == null) {
             return String.format("Could not find any place with a name of: %s, %s", country, city);
@@ -64,7 +65,7 @@ public class WeatherServiceImpl implements WeatherService {
     }
 
     @Override
-    public Forecast getWeatherForecast(String country, String city) throws IOException {
+    public Forecast getWeatherForecast(String country, String city) throws IOException, JSONException {
         TreeMap<Integer, Weather> forecast = getForecast(country, city);
         assert forecast != null;
 
@@ -82,7 +83,7 @@ public class WeatherServiceImpl implements WeatherService {
     }
 
     @Override
-    public String getSunriseTime(String country, String city) throws IOException {
+    public String getSunriseTime(String country, String city) throws IOException, JSONException {
         Weather weather = getWeatherData(country, city);
 
         assert weather != null;
@@ -102,8 +103,10 @@ public class WeatherServiceImpl implements WeatherService {
     }
 
     @Override
-    public String getSunsetTime(String country, String city) throws IOException {
-        Weather weather = getWeatherData(country, city);
+    public String getSunsetTime(String country, String city) throws IOException, JSONException {
+        Weather weather =
+
+                getWeatherData(country, city);
 
         assert weather != null;
         LocalDateTime sunsetTime = LocalDateTime.ofInstant(
@@ -121,7 +124,7 @@ public class WeatherServiceImpl implements WeatherService {
         return output;
     }
 
-    private Weather getWeatherData(String country, String city) throws IOException {
+    private Weather getWeatherData(String country, String city) throws IOException, JSONException {
         Weather weather;
         GeocodingResult geocodingResult = geocodingService.getGeocodingResult(country, city)
                 .orElse(null);
@@ -177,7 +180,7 @@ public class WeatherServiceImpl implements WeatherService {
         return weather;
     }
 
-    private TreeMap<Integer, Weather> getForecast(String country, String city) throws IOException {
+    private TreeMap<Integer, Weather> getForecast(String country, String city) throws IOException, JSONException {
         log.debug(String.format("WeatherService: getWeatherData(): country - %s city - %s", country, city));
 
         TreeMap<Integer, Weather> forecast = new TreeMap<>();
@@ -231,9 +234,10 @@ public class WeatherServiceImpl implements WeatherService {
         return forecast;
     }
 
-    private Weather getWeatherDataFromJSON(JSONObject object, GeocodingResult geocodingResult) {
+    private Weather getWeatherDataFromJSON(JSONObject object, GeocodingResult geocodingResult) throws JSONException {
         Weather weather = new Weather();
-        weather.setRealTemp(object.getJSONObject("main").getDouble("temp"));
+        weather.setRealTemp(object.
+                getJSONObject("main").getDouble("temp"));
         weather.setFeelsLikeTemp(object.getJSONObject("main").getDouble("feels_like"));
         weather.setHumidity(object.getJSONObject("main").getInt("humidity"));
         weather.setWindSpeed(object.getJSONObject("wind").getDouble("speed"));
